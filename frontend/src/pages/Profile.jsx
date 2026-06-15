@@ -31,8 +31,9 @@ const Profile = () => {
       setLoading(true); setError('');
       try {
         const { data } = await postsAPI.getUserPosts(username);
-        setPosts(data.posts);
-      } catch {
+        setPosts(data?.posts || []);
+      } catch (err) {
+        console.error('Profile posts loading error:', err);
         setError('Failed to load this profile.');
       } finally {
         setLoading(false);

@@ -41,8 +41,11 @@ const Feed = () => {
     setLoading(true); setError('');
     try {
       const { data } = await postsAPI.getFeed(null, 10, sort);
-      setPosts(data.posts); setHasMore(data.hasMore); setCursor(data.nextCursor);
-    } catch {
+      setPosts(data?.posts || []);
+      setHasMore(data?.hasMore || false);
+      setCursor(data?.nextCursor || null);
+    } catch (err) {
+      console.error('Feed loading error:', err);
       setError('Failed to load feed. Please try again.');
     } finally {
       setLoading(false);
@@ -59,9 +62,14 @@ const Feed = () => {
     setLoadingMore(true);
     try {
       const { data } = await postsAPI.getFeed(cursor, 10, FILTER_TABS[activeTab].value);
-      setPosts((p) => [...p, ...data.posts]);
-      setHasMore(data.hasMore); setCursor(data.nextCursor);
-    } catch { /* silent */ } finally { setLoadingMore(false); }
+      setPosts((p) => [...p, ...(data?.posts || [])]);
+      setHasMore(data?.hasMore || false);
+      setCursor(data?.nextCursor || null);
+    } catch (err) {
+      console.error('Load more error:', err);
+    } finally {
+      setLoadingMore(false);
+    }
   }, [loadingMore, hasMore, cursor, activeTab]);
 
   useEffect(() => {
