@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Card, CardContent, Box, TextField, Button, Avatar, Typography,
   Divider, IconButton, Tooltip, CircularProgress, Alert, Collapse,
+  Popover, Tabs, Tab,
 } from '@mui/material';
 import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined';
 import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
@@ -17,6 +18,37 @@ import SendIcon from '@mui/icons-material/Send';
 import CloseIcon from '@mui/icons-material/Close';
 import { useAuth } from '../context/AuthContext';
 import { postsAPI } from '../services/api';
+
+const EMOJI_CATEGORIES = [
+  {
+    name: 'Smileys',
+    icon: '😀',
+    emojis: [
+      '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕'
+    ]
+  },
+  {
+    name: 'Gestures & Hearts',
+    icon: '❤️',
+    emojis: [
+      '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🧠', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '💖', '💗', '💓', '💞', '💕', '💟', '❣️', '💘', '💝'
+    ]
+  },
+  {
+    name: 'Nature & Food',
+    icon: '🌸',
+    emojis: [
+      '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🐝', '🦋', '🌸', '🌹', '🌺', '🌻', '🌼', '🌷', '🌲', '🌳', '🌴', '🍀', '🍁', '🍃', '🌍', '🌎', '🌏', '🌟', '✨', '🔥', '💧', '🍕', '🍔', '🍟', '🌭', '🍿', '🍩', '🍪', '🍰', '🍫', '🍬', '🍺', '🍻', '🍷', '☕'
+    ]
+  },
+  {
+    name: 'Activities & Symbols',
+    icon: '🎉',
+    emojis: [
+      '🎉', '🎈', '🎂', '🎁', '🏆', '🥇', '🥈', '🥉', '⚽', '🏀', '🏈', '⚾', '🎾', '🎱', '🎮', '🎯', '🎬', '🎧', '🎸', '🎹', '🚗', '🚀', '✈️', '📌', '📍', '📝', '✉️', '🔒', '🔑', '💡', '⏰', '📱', '💻', '💸', '💯', '✅', '❌', '⚠️', '🔥', '✨'
+    ]
+  }
+];
 
 const stringToColor = (str = '') => {
   let hash = 0;
@@ -35,6 +67,38 @@ const CreatePost = ({ onPostCreated }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  // Emoji Picker State
+  const [emojiAnchor, setEmojiAnchor] = useState(null);
+  const [activeEmojiTab, setActiveEmojiTab] = useState(0);
+
+  const handleEmojiOpen = (event) => {
+    setEmojiAnchor(event.currentTarget);
+  };
+
+  const handleEmojiClose = () => {
+    setEmojiAnchor(null);
+  };
+
+  const handleEmojiClick = (emoji) => {
+    const input = document.getElementById('post-textarea');
+    if (input) {
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const newText = text.substring(0, start) + emoji + text.substring(end);
+      setText(newText);
+      
+      // Refocus and place cursor after inserted emoji
+      setTimeout(() => {
+        input.focus();
+        input.setSelectionRange(start + emoji.length, start + emoji.length);
+      }, 0);
+    } else {
+      setText((prev) => prev + emoji);
+    }
+  };
+
+  const isEmojiOpen = Boolean(emojiAnchor);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -80,7 +144,7 @@ const CreatePost = ({ onPostCreated }) => {
             onChange={(e) => setText(e.target.value)}
             disabled={loading}
             variant="outlined"
-            inputProps={{ maxLength: 1000 }}
+            inputProps={{ id: 'post-textarea', maxLength: 1000 }}
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: 3,
@@ -135,7 +199,9 @@ const CreatePost = ({ onPostCreated }) => {
               </IconButton>
             </Tooltip>
             <Tooltip title="Emoji">
-              <IconButton size="small"><EmojiEmotionsOutlinedIcon fontSize="small" /></IconButton>
+              <IconButton size="small" onClick={handleEmojiOpen} color={isEmojiOpen ? 'primary' : 'default'}>
+                <EmojiEmotionsOutlinedIcon fontSize="small" />
+              </IconButton>
             </Tooltip>
             <Tooltip title="Link">
               <IconButton size="small"><LinkOutlinedIcon fontSize="small" /></IconButton>
@@ -152,6 +218,81 @@ const CreatePost = ({ onPostCreated }) => {
             {loading ? <CircularProgress size={18} color="inherit" /> : 'Post'}
           </Button>
         </Box>
+
+        {/* Emoji Picker Popover */}
+        <Popover
+          open={isEmojiOpen}
+          anchorEl={emojiAnchor}
+          onClose={handleEmojiClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+          PaperProps={{
+            sx: {
+              width: 320,
+              maxHeight: 350,
+              display: 'flex',
+              flexDirection: 'column',
+              borderRadius: 3,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+              mt: 1,
+            }
+          }}
+        >
+          {/* Category tabs */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', bgcolor: '#fdfdfd' }}>
+            <Tabs
+              value={activeEmojiTab}
+              onChange={(_, v) => setActiveEmojiTab(v)}
+              variant="fullWidth"
+              sx={{
+                minHeight: 40,
+                width: '100%',
+                '& .MuiTab-root': {
+                  minHeight: 40,
+                  fontSize: '1.2rem',
+                  py: 0.5,
+                }
+              }}
+            >
+              {EMOJI_CATEGORIES.map((cat, i) => (
+                <Tab key={cat.name} label={cat.icon} title={cat.name} />
+              ))}
+            </Tabs>
+          </Box>
+
+          {/* Emojis list */}
+          <Box sx={{ p: 1.5, overflowY: 'auto', flex: 1 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontWeight: 600 }}>
+              {EMOJI_CATEGORIES[activeEmojiTab].name}
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.5 }}>
+              {EMOJI_CATEGORIES[activeEmojiTab].emojis.map((emoji, idx) => (
+                <IconButton
+                  key={idx}
+                  size="small"
+                  onClick={() => handleEmojiClick(emoji)}
+                  sx={{
+                    fontSize: '1.25rem',
+                    borderRadius: 1,
+                    '&:hover': {
+                      bgcolor: 'primary.light',
+                      transform: 'scale(1.15)',
+                    },
+                    transition: 'transform 0.1s ease-in-out',
+                  }}
+                >
+                  {emoji}
+                </IconButton>
+              ))}
+            </Box>
+          </Box>
+        </Popover>
       </CardContent>
     </Card>
   );
