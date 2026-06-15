@@ -64,7 +64,7 @@ router.get('/', async (req, res) => {
 // At least one of text or imageUrl must be provided.
 router.post('/', protect, async (req, res) => {
   try {
-    const { text, imageUrl, poll } = req.body;
+    const { text, imageUrl, poll, pollDuration } = req.body;
 
     // Validate: need at least text, image, or poll
     if (!text?.trim() && !imageUrl?.trim() && !poll) {
@@ -80,8 +80,14 @@ router.post('/', protect, async (req, res) => {
       if (!text?.trim()) {
         return res.status(400).json({ message: 'A poll must have a question (text)' });
       }
+
+      const hours = parseInt(pollDuration) || 24;
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + hours);
+
       pollData = {
-        options: filteredOptions.map(t => ({ text: t, votes: [] }))
+        options: filteredOptions.map(t => ({ text: t, votes: [] })),
+        expiresAt
       };
     }
 
@@ -204,6 +210,10 @@ router.post('/:id/vote', protect, async (req, res) => {
 
     if (!post.poll || !post.poll.options || post.poll.options.length === 0) {
       return res.status(400).json({ message: 'This post is not a poll' });
+    }
+
+    if (post.poll.expiresAt && new Date() > new Date(post.poll.expiresAt)) {
+      return res.status(400).json({ message: 'This poll has ended' });
     }
 
     const userId = req.user._id;

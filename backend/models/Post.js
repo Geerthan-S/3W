@@ -97,7 +97,10 @@ const postSchema = new mongoose.Schema(
             }
           ]
         }
-      ]
+      ],
+      expiresAt: {
+        type: Date,
+      }
     }
   },
   {

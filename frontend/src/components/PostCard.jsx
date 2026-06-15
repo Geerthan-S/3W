@@ -110,6 +110,22 @@ const PostCard = ({ post, onDelete }) => {
   const hasVoted = poll?.options?.some(opt =>
     opt.votes?.some(v => v === user?.id || v._id === user?.id || v === user?._id)
   );
+  const isExpired = poll?.expiresAt ? new Date() > new Date(poll.expiresAt) : false;
+  const shouldShowResults = hasVoted || !user || isExpired;
+
+  const getPollTimeLeft = () => {
+    if (!poll || !poll.expiresAt) return '';
+    const timeLeftMs = new Date(poll.expiresAt).getTime() - Date.now();
+    if (timeLeftMs <= 0) return 'Final results';
+
+    const minutes = Math.floor(timeLeftMs / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days} ${days === 1 ? 'day' : 'days'} left`;
+    if (hours > 0) return `${hours} ${hours === 1 ? 'hour' : 'hours'} left`;
+    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} left`;
+  };
 
   return (
     <Card sx={{ mb: 1.5, borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
@@ -177,7 +193,7 @@ const PostCard = ({ post, onDelete }) => {
 
               return (
                 <Box key={option._id} sx={{ position: 'relative', width: '100%' }}>
-                  {hasVoted || !user ? (
+                  {shouldShowResults ? (
                     // Results Mode
                     <Box
                       sx={{
@@ -245,7 +261,7 @@ const PostCard = ({ post, onDelete }) => {
 
             {/* Poll footer */}
             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'} • {!user ? 'Log in to vote' : hasVoted ? 'Results' : 'Select an option to vote'}
+              {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'} • {getPollTimeLeft()} {!user ? '• Log in to vote' : ''}
             </Typography>
           </Box>
         )}
