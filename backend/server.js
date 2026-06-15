@@ -21,8 +21,10 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://3-w-phi.vercel.app",
-      "https://3-w-black.vercel.app"
+      "https://3-w-black.vercel.app",
+      "https://3-w-git-main-geerthans-projects.vercel.app"
     ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true
   })
 );
