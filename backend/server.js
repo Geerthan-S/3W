@@ -20,9 +20,9 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://3-w-phi.vercel.app"
+      "https://3-w-phi.vercel.app",
+      "https://3-w-black.vercel.app"
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
   })
 );
