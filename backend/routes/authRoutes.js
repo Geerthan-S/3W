@@ -1,0 +1,119 @@
+/**
+ * routes/authRoutes.js
+ * Handles user registration and login.
+ * Returns a JWT token on success.
+ */
+
+const express = require('express');
+const router = express.Router();
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const { protect } = require('../middleware/authMiddleware');
+
+// ─── Helper: generate a signed JWT ────────────────────────────────────────────
+const generateToken = (userId) => {
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+    expiresIn: '7d', // Token valid for 7 days
+  });
+};
+
+// ─── POST /api/auth/register ───────────────────────────────────────────────────
+// Creates a new user account and returns a JWT token.
+router.post('/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    // Validate required fields
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Check if email or username is already taken
+    const existingUser = await User.findOne({
+      $or: [{ email: email.toLowerCase() }, { username }],
+    });
+
+    if (existingUser) {
+      const field = existingUser.email === email.toLowerCase() ? 'Email' : 'Username';
+      return res.status(409).json({ message: `${field} is already taken` });
+    }
+
+    // Create the user (password is hashed in the pre-save hook)
+    const user = await User.create({ username, email, password });
+
+    // Return the token and public user info
+    res.status(201).json({
+      token: generateToken(user._id),
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar,
+        bio: user.bio,
+      },
+    });
+  } catch (err) {
+    // Handle Mongoose validation errors
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map((e) => e.message);
+      return res.status(400).json({ message: messages[0] });
+    }
+    console.error('Register error:', err);
+    res.status(500).json({ message: 'Server error during registration' });
+  }
+});
+
+// ─── POST /api/auth/login ──────────────────────────────────────────────────────
+// Authenticates a user and returns a JWT token.
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      // Generic message to avoid email enumeration
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Compare provided password with stored hash
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Return token and user info
+    res.json({
+      token: generateToken(user._id),
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar,
+        bio: user.bio,
+      },
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ message: 'Server error during login' });
+  }
+});
+
+// ─── GET /api/auth/me ──────────────────────────────────────────────────────────
+// Returns the currently authenticated user's profile.
+router.get('/me', protect, async (req, res) => {
+  res.json({
+    id: req.user._id,
+    username: req.user.username,
+    email: req.user.email,
+    avatar: req.user.avatar,
+    bio: req.user.bio,
+    createdAt: req.user.createdAt,
+  });
+});
+
+module.exports = router;

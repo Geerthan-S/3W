@@ -1,0 +1,158 @@
+/* PostCard.css */
+
+.post-card {
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* ── Header ── */
+.post-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.post-author-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+}
+
+.post-author-link:hover .post-username {
+  color: var(--accent-2);
+}
+
+.post-avatar {
+  width: 42px;
+  height: 42px;
+  font-size: 0.9rem;
+}
+
+.post-username {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  transition: color 0.2s;
+}
+
+.post-time {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.post-delete-btn {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.post-card:hover .post-delete-btn {
+  opacity: 1;
+}
+
+/* ── Content ── */
+.post-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.post-text {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.post-image-wrap {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-surface);
+  max-height: 480px;
+}
+
+.post-image {
+  width: 100%;
+  max-height: 480px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.post-image:hover {
+  transform: scale(1.01);
+}
+
+/* ── Actions bar ── */
+.post-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-full);
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.action-btn:hover {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.action-btn.active {
+  background: rgba(236,72,153,0.08);
+  border-color: rgba(236,72,153,0.2);
+  color: var(--like-active);
+}
+
+.action-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Like specific */
+.like-btn.liked {
+  color: var(--like-active);
+  animation: likePoP 0.3s ease;
+}
+
+.action-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.action-count {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .post-card {
+    border-radius: var(--radius-md);
+  }
+
+  .post-delete-btn {
+    opacity: 1; /* Always visible on mobile */
+  }
+}

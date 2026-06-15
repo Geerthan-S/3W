@@ -1,0 +1,22 @@
+/* CreatePostPage.css */
+
+.create-page {
+  min-height: 100vh;
+  padding: var(--space-xl) 0 var(--space-2xl);
+}
+
+.create-page-header {
+  margin-bottom: var(--space-md);
+}
+
+.back-link {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.back-link:hover {
+  color: var(--accent-2);
+}

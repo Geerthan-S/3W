@@ -1,0 +1,185 @@
+/* Feed.css */
+
+.feed-page {
+  min-height: 100vh;
+  padding-bottom: var(--space-2xl);
+}
+
+/* ── Hero ── */
+.feed-hero {
+  background: var(--accent-gradient-subtle);
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-xl) var(--space-lg);
+  text-align: center;
+}
+
+.feed-hero-inner {
+  max-width: var(--feed-max-width);
+  margin: 0 auto;
+}
+
+.feed-hero-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-xs);
+}
+
+.feed-hero-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+/* ── Feed container ── */
+.feed-container {
+  padding-top: var(--space-lg);
+}
+
+/* ── Create wrap ── */
+.feed-create-wrap {
+  margin-bottom: var(--space-lg);
+}
+
+/* ── CTA for guests ── */
+.feed-cta {
+  padding: var(--space-md) var(--space-lg);
+  text-align: center;
+  margin-bottom: var(--space-lg);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.cta-link {
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+.cta-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Skeleton loading ── */
+.feed-loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.post-skeleton {
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.skeleton-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.skeleton-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+}
+
+/* Shimmer pulse animation */
+@keyframes shimmer {
+  0%   { opacity: 0.4; }
+  50%  { opacity: 0.8; }
+  100% { opacity: 0.4; }
+}
+
+.skeleton-pulse {
+  background: var(--border);
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* ── Posts list ── */
+.posts-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Error state ── */
+.feed-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+  text-align: center;
+}
+
+/* ── Empty state ── */
+.feed-empty {
+  padding: var(--space-2xl) var(--space-xl);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.feed-empty-emoji {
+  font-size: 2.5rem;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.feed-empty h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.feed-empty p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+/* ── Sentinel & load more ── */
+.feed-sentinel {
+  height: 1px;
+}
+
+.feed-loading-more {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-lg);
+}
+
+.feed-end {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: var(--space-lg);
+  letter-spacing: 0.03em;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .feed-hero {
+    padding: var(--space-lg) var(--space-md);
+  }
+
+  .feed-hero-title {
+    font-size: 1.4rem;
+  }
+}
