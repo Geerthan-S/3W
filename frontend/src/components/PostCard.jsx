@@ -11,13 +11,19 @@ import { useNavigate } from 'react-router-dom';
 import {
   Card, CardContent, CardActions, CardMedia,
   Avatar, Typography, Box, IconButton, Button,
-  Divider, Collapse, Tooltip,
+  Divider, Collapse, Tooltip, Dialog, DialogTitle, DialogContent,
 } from '@mui/material';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutlined';
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
+import CloseIcon from '@mui/icons-material/Close';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import TwitterIcon from '@mui/icons-material/Twitter';
+import FacebookIcon from '@mui/icons-material/Facebook';
+import TelegramIcon from '@mui/icons-material/Telegram';
 import { useAuth } from '../context/AuthContext';
 import { postsAPI } from '../services/api';
 import CommentSection from './CommentSection';
@@ -68,6 +74,29 @@ const PostCard = ({ post, onDelete }) => {
         ? '#d4af37' // Gold/Yellow
         : '#2196F3') // Blue
     : null;
+
+  const [shareOpen, setShareOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleShareClick = () => {
+    setShareOpen(true);
+  };
+
+  const handleShareClose = () => {
+    setShareOpen(false);
+    setCopied(false);
+  };
+
+  const postUrl = `${window.location.origin}/?post=${post._id}`;
+  const shareText = `Check out this post by @${post.authorUsername} on SocialPost!`;
+  const encodedUrl = encodeURIComponent(postUrl);
+  const encodedText = encodeURIComponent(shareText);
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(postUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   // ── Like toggle ───────────────────────────────────────────────────────────
   const handleLike = async () => {
@@ -422,7 +451,7 @@ const PostCard = ({ post, onDelete }) => {
 
         {/* Share */}
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <IconButton size="small" sx={{ color: 'text.secondary' }}>
+          <IconButton size="small" onClick={handleShareClick} sx={{ color: 'text.secondary' }}>
             <ShareOutlinedIcon fontSize="small" />
           </IconButton>
           <Typography variant="caption" color="text.secondary">0</Typography>
@@ -440,6 +469,204 @@ const PostCard = ({ post, onDelete }) => {
           />
         </Box>
       </Collapse>
+
+      {/* ── Share Dialog ── */}
+      <Dialog 
+        open={shareOpen} 
+        onClose={handleShareClose}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+            position: 'relative'
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, pr: 6, pb: 1 }}>
+          Share Post
+          <IconButton
+            onClick={handleShareClose}
+            sx={{
+              position: 'absolute',
+              right: 12,
+              top: 12,
+              color: 'text.secondary'
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 1, pb: 3 }}>
+          {/* Post Preview Thumbnail */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 2,
+              p: 2,
+              mb: 3,
+              borderRadius: 2,
+              bgcolor: '#f5f7f8',
+              border: '1px solid #eef0f2'
+            }}
+          >
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                <Avatar 
+                  sx={{ width: 24, height: 24, bgcolor: avatarColor, fontSize: '0.65rem', fontWeight: 700 }}
+                >
+                  {initials}
+                </Avatar>
+                <Typography variant="caption" fontWeight={700} noWrap>
+                  @{post.authorUsername}
+                </Typography>
+              </Box>
+              <Typography 
+                variant="body2" 
+                color="text.secondary" 
+                sx={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  lineHeight: 1.4
+                }}
+              >
+                {isPromotion 
+                  ? `[Promo] ${post.promotion.appName} - ${post.promotion.title}: ${post.promotion.description}` 
+                  : post.text || 'Image Post'
+                }
+              </Typography>
+            </Box>
+
+            {/* Image Thumbnail if exists */}
+            {!isPromotion && post.imageUrl && (
+              <Box 
+                component="img" 
+                src={post.imageUrl} 
+                alt="Thumbnail" 
+                sx={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: 1,
+                  objectFit: 'cover',
+                  flexShrink: 0
+                }}
+              />
+            )}
+          </Box>
+
+          {/* Share Options Row */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+            {/* Copy Link Button */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+              <IconButton 
+                onClick={handleCopyLink}
+                sx={{ 
+                  bgcolor: copied ? 'success.light' : '#f0f2f5', 
+                  color: copied ? 'success.contrastText' : 'text.primary',
+                  width: 48,
+                  height: 48,
+                  '&:hover': { bgcolor: copied ? 'success.main' : '#e4e6eb' }
+                }}
+              >
+                <ContentCopyIcon fontSize="small" />
+              </IconButton>
+              <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+                {copied ? 'Copied!' : 'Copy Link'}
+              </Typography>
+            </Box>
+
+            {/* WhatsApp */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+              <IconButton 
+                href={`https://api.whatsapp.com/send?text=${encodedText}%20${encodedUrl}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ 
+                  bgcolor: '#E8F5E9', 
+                  color: '#25D366',
+                  width: 48,
+                  height: 48,
+                  '&:hover': { bgcolor: '#C8E6C9' }
+                }}
+              >
+                <WhatsAppIcon fontSize="small" />
+              </IconButton>
+              <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+                WhatsApp
+              </Typography>
+            </Box>
+
+            {/* Telegram */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+              <IconButton 
+                href={`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ 
+                  bgcolor: '#E1F5FE', 
+                  color: '#0088cc',
+                  width: 48,
+                  height: 48,
+                  '&:hover': { bgcolor: '#B3E5FC' }
+                }}
+              >
+                <TelegramIcon fontSize="small" />
+              </IconButton>
+              <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+                Telegram
+              </Typography>
+            </Box>
+
+            {/* Twitter/X */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+              <IconButton 
+                href={`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ 
+                  bgcolor: '#E0E0E0', 
+                  color: '#000000',
+                  width: 48,
+                  height: 48,
+                  '&:hover': { bgcolor: '#BDBDBD' }
+                }}
+              >
+                <TwitterIcon fontSize="small" />
+              </IconButton>
+              <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+                Twitter
+              </Typography>
+            </Box>
+
+            {/* Facebook */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+              <IconButton 
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ 
+                  bgcolor: '#E8EAF6', 
+                  color: '#1877F2',
+                  width: 48,
+                  height: 48,
+                  '&:hover': { bgcolor: '#C5CAE9' }
+                }}
+              >
+                <FacebookIcon fontSize="small" />
+              </IconButton>
+              <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+                Facebook
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
