@@ -83,11 +83,25 @@ const Navbar = () => {
         {user ? (
           <>
             {/* Create post */}
-            <Tooltip title="Create Post">
-              <IconButton color="primary" onClick={() => navigate('/create')} sx={{ mr: 0.5 }}>
-                <AddCircleOutlineIcon />
-              </IconButton>
-            </Tooltip>
+            <Button
+              variant="text"
+              color="primary"
+              onClick={() => navigate('/create')}
+              startIcon={<AddCircleOutlineIcon />}
+              sx={{
+                fontWeight: 700,
+                textTransform: 'none',
+                mr: 1,
+                borderRadius: 20,
+                px: 2,
+                py: 0.5,
+                '&:hover': {
+                  bgcolor: 'rgba(33, 150, 243, 0.08)'
+                }
+              }}
+            >
+              Create
+            </Button>
 
             {/* Avatar menu */}
             <Tooltip title={user.username}>
