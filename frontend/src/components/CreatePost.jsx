@@ -13,7 +13,8 @@ import {
 } from '@mui/material';
 import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined';
 import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
-import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
+import PollIcon from '@mui/icons-material/Poll';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SendIcon from '@mui/icons-material/Send';
 import CloseIcon from '@mui/icons-material/Close';
 import { useAuth } from '../context/AuthContext';
@@ -68,6 +69,10 @@ const CreatePost = ({ onPostCreated }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  // Poll State
+  const [showPollInput, setShowPollInput] = useState(false);
+  const [pollOptions, setPollOptions] = useState(['', '']);
+
   // Emoji Picker State
   const [emojiAnchor, setEmojiAnchor] = useState(null);
   const [activeEmojiTab, setActiveEmojiTab] = useState(0);
@@ -100,19 +105,56 @@ const CreatePost = ({ onPostCreated }) => {
 
   const isEmojiOpen = Boolean(emojiAnchor);
 
+  const handleAddPollOption = () => {
+    if (pollOptions.length < 5) {
+      setPollOptions([...pollOptions, '']);
+    }
+  };
+
+  const handleRemovePollOption = (index) => {
+    if (pollOptions.length > 2) {
+      setPollOptions(pollOptions.filter((_, idx) => idx !== index));
+    }
+  };
+
+  const handlePollOptionChange = (index, val) => {
+    const updated = [...pollOptions];
+    updated[index] = val;
+    setPollOptions(updated);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!text.trim() && !imageUrl.trim()) {
-      setError('Please add some text or an image URL.');
-      return;
+
+    if (showPollInput) {
+      if (!text.trim()) {
+        setError('Please enter a question for your poll.');
+        return;
+      }
+      const validOptions = pollOptions.map(opt => opt.trim()).filter(Boolean);
+      if (validOptions.length < 2) {
+        setError('Please enter at least 2 valid poll options.');
+        return;
+      }
+    } else {
+      if (!text.trim() && !imageUrl.trim()) {
+        setError('Please add some text or an image URL.');
+        return;
+      }
     }
+
     setLoading(true);
     try {
-      const { data } = await postsAPI.createPost({ text: text.trim(), imageUrl: imageUrl.trim() });
+      const payload = showPollInput
+        ? { text: text.trim(), poll: pollOptions.map(opt => opt.trim()).filter(Boolean) }
+        : { text: text.trim(), imageUrl: imageUrl.trim() };
+
+      const { data } = await postsAPI.createPost(payload);
       if (onPostCreated) {
         onPostCreated(data);
         setText(''); setImageUrl(''); setShowImageInput(false);
+        setShowPollInput(false); setPollOptions(['', '']);
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       } else {
@@ -182,6 +224,41 @@ const CreatePost = ({ onPostCreated }) => {
           )}
         </Collapse>
 
+        {/* Poll Options Input */}
+        <Collapse in={showPollInput}>
+          <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Typography variant="caption" fontWeight={700} color="primary.main">
+              Poll Options (2-5 options)
+            </Typography>
+            {pollOptions.map((option, index) => (
+              <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <TextField
+                  fullWidth size="small"
+                  placeholder={`Option ${index + 1}`}
+                  value={option}
+                  onChange={(e) => handlePollOptionChange(index, e.target.value)}
+                  disabled={loading}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                />
+                {pollOptions.length > 2 && (
+                  <IconButton size="small" onClick={() => handleRemovePollOption(index)}>
+                    <DeleteOutlineIcon fontSize="small" color="error" />
+                  </IconButton>
+                )}
+              </Box>
+            ))}
+            {pollOptions.length < 5 && (
+              <Button
+                size="small"
+                onClick={handleAddPollOption}
+                sx={{ alignSelf: 'flex-start', mt: 0.5, fontWeight: 700 }}
+              >
+                + Add Option
+              </Button>
+            )}
+          </Box>
+        </Collapse>
+
         {/* Error / Success */}
         {error && <Alert severity="error" sx={{ mt: 1.5, borderRadius: 2 }}>{error}</Alert>}
         {success && <Alert severity="success" sx={{ mt: 1.5, borderRadius: 2 }}>Post published!</Alert>}
@@ -194,7 +271,10 @@ const CreatePost = ({ onPostCreated }) => {
           <Box sx={{ display: 'flex', gap: 0.5 }}>
             <Tooltip title="Add image URL">
               <IconButton size="small" color={showImageInput ? 'primary' : 'default'}
-                onClick={() => setShowImageInput((v) => !v)}>
+                onClick={() => {
+                  setShowImageInput((v) => !v);
+                  setShowPollInput(false);
+                }}>
                 <PhotoCameraOutlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -203,8 +283,14 @@ const CreatePost = ({ onPostCreated }) => {
                 <EmojiEmotionsOutlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Link">
-              <IconButton size="small"><LinkOutlinedIcon fontSize="small" /></IconButton>
+            <Tooltip title="Add Poll">
+              <IconButton size="small" color={showPollInput ? 'primary' : 'default'}
+                onClick={() => {
+                  setShowPollInput((v) => !v);
+                  setShowImageInput(false);
+                }}>
+                <PollIcon fontSize="small" />
+              </IconButton>
             </Tooltip>
           </Box>
 
@@ -212,7 +298,7 @@ const CreatePost = ({ onPostCreated }) => {
           <Button
             variant="contained" endIcon={loading ? null : <SendIcon />}
             onClick={handleSubmit}
-            disabled={loading || (!text.trim() && !imageUrl.trim())}
+            disabled={loading || (showPollInput ? (!text.trim() || pollOptions.filter(o => o.trim() !== '').length < 2) : (!text.trim() && !imageUrl.trim()))}
             sx={{ borderRadius: 5, px: 3, py: 0.8 }}
           >
             {loading ? <CircularProgress size={18} color="inherit" /> : 'Post'}

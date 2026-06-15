@@ -80,6 +80,9 @@ export const postsAPI = {
 
   /** Get all posts by a specific username */
   getUserPosts: (username) => api.get(`/api/posts/user/${username}`),
+
+  /** Cast a vote on a poll option */
+  votePost: (postId, optionId) => api.post(`/api/posts/${postId}/vote`, { optionId }),
 };
 
 export default api;

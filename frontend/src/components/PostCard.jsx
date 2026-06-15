@@ -51,6 +51,10 @@ const PostCard = ({ post, onDelete }) => {
   const [showComments, setShowComments] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Poll state
+  const [poll, setPoll] = useState(post.poll);
+  const [voteLoading, setVoteLoading] = useState(false);
+
   const isOwner = user && (user.id === post.author?._id || user.id === post.author);
   const initials = post.authorUsername?.slice(0, 2).toUpperCase();
   const avatarColor = stringToColor(post.authorUsername);
@@ -73,6 +77,21 @@ const PostCard = ({ post, onDelete }) => {
     }
   };
 
+  // ── Cast Vote ──────────────────────────────────────────────────────────────
+  const handleVote = async (optionId) => {
+    if (!user || voteLoading) return;
+    setVoteLoading(true);
+    try {
+      const { data } = await postsAPI.votePost(post._id, optionId);
+      setPoll(data.poll);
+    } catch (err) {
+      console.error('Vote failed:', err);
+      alert(err.response?.data?.message || 'Failed to vote');
+    } finally {
+      setVoteLoading(false);
+    }
+  };
+
   // ── Delete ────────────────────────────────────────────────────────────────
   const handleDelete = async () => {
     if (!window.confirm('Delete this post?')) return;
@@ -85,6 +104,12 @@ const PostCard = ({ post, onDelete }) => {
       setDeleteLoading(false);
     }
   };
+
+  // Poll metrics calculation
+  const totalVotes = poll?.options?.reduce((sum, opt) => sum + (opt.votes?.length || 0), 0) || 0;
+  const hasVoted = poll?.options?.some(opt =>
+    opt.votes?.some(v => v === user?.id || v._id === user?.id || v === user?._id)
+  );
 
   return (
     <Card sx={{ mb: 1.5, borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
@@ -137,9 +162,92 @@ const PostCard = ({ post, onDelete }) => {
 
         {/* ── Post text ── */}
         {post.text && (
-          <Typography variant="body2" sx={{ mb: post.imageUrl ? 1.5 : 0, lineHeight: 1.7, color: 'text.primary' }}>
+          <Typography variant="body2" sx={{ mb: (post.imageUrl || (poll && poll.options?.length > 0)) ? 1.5 : 0, lineHeight: 1.7, color: 'text.primary' }}>
             {post.text}
           </Typography>
+        )}
+
+        {/* ── Poll Section ── */}
+        {poll && poll.options && poll.options.length > 0 && (
+          <Box sx={{ mt: 1.5, mb: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {poll.options.map((option) => {
+              const optVotes = option.votes?.length || 0;
+              const percent = totalVotes > 0 ? Math.round((optVotes / totalVotes) * 100) : 0;
+              const isUserChoice = option.votes?.some(v => v === user?.id || v._id === user?.id || v === user?._id);
+
+              return (
+                <Box key={option._id} sx={{ position: 'relative', width: '100%' }}>
+                  {hasVoted || !user ? (
+                    // Results Mode
+                    <Box
+                      sx={{
+                        position: 'relative',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        p: 1.25,
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: isUserChoice ? 'primary.main' : '#e0e0e0',
+                        bgcolor: isUserChoice ? 'rgba(33, 150, 243, 0.03)' : '#fcfcfc',
+                        overflow: 'hidden',
+                        zIndex: 1,
+                      }}
+                    >
+                      {/* Progress bar background */}
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          bottom: 0,
+                          width: `${percent}%`,
+                          bgcolor: isUserChoice ? 'rgba(33, 150, 243, 0.12)' : '#eef0f2',
+                          zIndex: -1,
+                          transition: 'width 0.6s ease-in-out',
+                        }}
+                      />
+                      <Typography variant="body2" fontWeight={isUserChoice ? 700 : 500} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {option.text}
+                        {isUserChoice && <span style={{ fontSize: '0.85rem', color: '#2196F3' }}>✓</span>}
+                      </Typography>
+                      <Typography variant="body2" fontWeight={700}>
+                        {percent}%
+                      </Typography>
+                    </Box>
+                  ) : (
+                    // Vote Mode (clickable option)
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      disabled={voteLoading}
+                      onClick={() => handleVote(option._id)}
+                      sx={{
+                        justifyContent: 'flex-start',
+                        textTransform: 'none',
+                        borderRadius: 2,
+                        p: 1.25,
+                        borderColor: '#bdbdbd',
+                        color: 'text.primary',
+                        fontWeight: 600,
+                        '&:hover': {
+                          bgcolor: 'rgba(33, 150, 243, 0.04)',
+                          borderColor: 'primary.main',
+                        }
+                      }}
+                    >
+                      {option.text}
+                    </Button>
+                  )}
+                </Box>
+              );
+            })}
+
+            {/* Poll footer */}
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'} • {!user ? 'Log in to vote' : hasVoted ? 'Results' : 'Select an option to vote'}
+            </Typography>
+          </Box>
         )}
       </CardContent>
 

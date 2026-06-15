@@ -80,6 +80,25 @@ const postSchema = new mongoose.Schema(
 
     // Embedded comments (no separate collection needed per assignment rules)
     comments: [commentSchema],
+
+    // Embedded poll (optional)
+    poll: {
+      options: [
+        {
+          text: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+          votes: [
+            {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: 'User',
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     timestamps: true, // createdAt used for feed ordering

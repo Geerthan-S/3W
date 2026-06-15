@@ -64,11 +64,25 @@ router.get('/', async (req, res) => {
 // At least one of text or imageUrl must be provided.
 router.post('/', protect, async (req, res) => {
   try {
-    const { text, imageUrl } = req.body;
+    const { text, imageUrl, poll } = req.body;
 
-    // Validate: need at least text or image
-    if (!text?.trim() && !imageUrl?.trim()) {
-      return res.status(400).json({ message: 'Post must have text or an image' });
+    // Validate: need at least text, image, or poll
+    if (!text?.trim() && !imageUrl?.trim() && !poll) {
+      return res.status(400).json({ message: 'Post must have text, an image, or a poll' });
+    }
+
+    let pollData = null;
+    if (poll && Array.isArray(poll)) {
+      const filteredOptions = poll.map(opt => opt.trim()).filter(Boolean);
+      if (filteredOptions.length < 2) {
+        return res.status(400).json({ message: 'A poll must have at least 2 options' });
+      }
+      if (!text?.trim()) {
+        return res.status(400).json({ message: 'A poll must have a question (text)' });
+      }
+      pollData = {
+        options: filteredOptions.map(t => ({ text: t, votes: [] }))
+      };
     }
 
     const post = await Post.create({
@@ -76,6 +90,7 @@ router.post('/', protect, async (req, res) => {
       authorUsername: req.user.username,
       text: text?.trim() || '',
       imageUrl: imageUrl?.trim() || '',
+      poll: pollData,
     });
 
     // Populate author info before returning so the frontend can render immediately
@@ -172,6 +187,49 @@ router.delete('/:id', protect, async (req, res) => {
   } catch (err) {
     console.error('Delete post error:', err);
     res.status(500).json({ message: 'Failed to delete post' });
+  }
+// ─── POST /api/posts/:id/vote ──────────────────────────────────────────────────
+// Casts a vote on a poll option. Requires auth.
+router.post('/:id/vote', protect, async (req, res) => {
+  try {
+    const { optionId } = req.body;
+    if (!optionId) {
+      return res.status(400).json({ message: 'Option ID is required' });
+    }
+
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (!post.poll || !post.poll.options || post.poll.options.length === 0) {
+      return res.status(400).json({ message: 'This post is not a poll' });
+    }
+
+    const userId = req.user._id;
+
+    // Check if user has already voted on any option
+    const alreadyVoted = post.poll.options.some(opt => 
+      opt.votes.some(v => v.equals(userId))
+    );
+
+    if (alreadyVoted) {
+      return res.status(400).json({ message: 'You have already voted in this poll' });
+    }
+
+    // Find the option to vote on
+    const option = post.poll.options.id(optionId);
+    if (!option) {
+      return res.status(404).json({ message: 'Poll option not found' });
+    }
+
+    option.votes.push(userId);
+    await post.save();
+
+    res.json(post);
+  } catch (err) {
+    console.error('Vote error:', err);
+    res.status(500).json({ message: 'Failed to record vote' });
   }
 });
 
