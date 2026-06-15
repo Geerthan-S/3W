@@ -60,9 +60,10 @@ export const postsAPI = {
    * @param {string|null} cursor - Last post ID from previous page (for infinite scroll)
    * @param {number} limit - Posts per page
    */
-  getFeed: (cursor = null, limit = 10, sort = 'newest') => {
-    const params = { limit, sort };
+  getFeed: (cursor = null, limit = 10, sort = 'newest', type = 'posts', category = null) => {
+    const params = { limit, sort, type };
     if (cursor) params.cursor = cursor;
+    if (category) params.category = category;
     return api.get('/api/posts', { params });
   },
 

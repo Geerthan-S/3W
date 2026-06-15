@@ -101,6 +101,35 @@ const postSchema = new mongoose.Schema(
       expiresAt: {
         type: Date,
       }
+    },
+
+    // Embedded promotion (optional)
+    promotion: {
+      appName: {
+        type: String,
+        trim: true,
+      },
+      title: {
+        type: String,
+        trim: true,
+      },
+      description: {
+        type: String,
+        trim: true,
+      },
+      buttonText: {
+        type: String,
+        trim: true,
+      },
+      buttonLink: {
+        type: String,
+        trim: true,
+      },
+      category: {
+        type: String,
+        enum: ['Refer And Earn', 'Crypto'],
+        trim: true,
+      }
     }
   },
   {

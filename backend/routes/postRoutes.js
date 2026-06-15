@@ -20,25 +20,41 @@ router.get('/', async (req, res) => {
     const limit  = Math.min(parseInt(req.query.limit) || 10, 20);
     const cursor = req.query.cursor;
     const sort   = req.query.sort || 'newest';
+    const type   = req.query.type || 'posts';
+    const category = req.query.category;
+
+    // Build base filter based on type and category
+    const baseFilter = {};
+    if (type === 'promotions') {
+      baseFilter.promotion = { $ne: null };
+      if (category && ['Refer And Earn', 'Crypto'].includes(category)) {
+        baseFilter['promotion.category'] = category;
+      }
+    } else {
+      baseFilter.$or = [
+        { promotion: null },
+        { promotion: { $exists: false } }
+      ];
+    }
 
     let posts;
 
     if (sort === 'likes') {
       // Sort by number of likes (most liked first) — no cursor pagination for sorted views
-      posts = await Post.find({})
+      posts = await Post.find(baseFilter)
         .populate('author', 'username avatar')
         .lean();
       posts.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
       posts = posts.slice(0, limit);
     } else if (sort === 'comments') {
-      posts = await Post.find({})
+      posts = await Post.find(baseFilter)
         .populate('author', 'username avatar')
         .lean();
       posts.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
       posts = posts.slice(0, limit);
     } else {
       // Default: newest first with cursor pagination
-      const query = cursor ? { _id: { $lt: cursor } } : {};
+      const query = cursor ? { ...baseFilter, _id: { $lt: cursor } } : baseFilter;
       const raw = await Post.find(query)
         .sort({ _id: -1 })
         .limit(limit + 1)
@@ -64,11 +80,22 @@ router.get('/', async (req, res) => {
 // At least one of text or imageUrl must be provided.
 router.post('/', protect, async (req, res) => {
   try {
-    const { text, imageUrl, poll, pollDuration } = req.body;
+    const { text, imageUrl, poll, pollDuration, promotion } = req.body;
 
-    // Validate: need at least text, image, or poll
-    if (!text?.trim() && !imageUrl?.trim() && !poll) {
-      return res.status(400).json({ message: 'Post must have text, an image, or a poll' });
+    // Validate: need at least text, image, poll, or promotion
+    if (!text?.trim() && !imageUrl?.trim() && !poll && !promotion) {
+      return res.status(400).json({ message: 'Post must have text, an image, a poll, or a promotion' });
+    }
+
+    // Validate promotion if provided
+    if (promotion) {
+      const { appName, title, description, buttonText, buttonLink, category } = promotion;
+      if (!appName?.trim() || !title?.trim() || !description?.trim() || !buttonText?.trim() || !buttonLink?.trim() || !category?.trim()) {
+        return res.status(400).json({ message: 'All promotion fields are required.' });
+      }
+      if (!['Refer And Earn', 'Crypto'].includes(category)) {
+        return res.status(400).json({ message: 'Invalid promotion category.' });
+      }
     }
 
     let pollData = null;
@@ -97,6 +124,7 @@ router.post('/', protect, async (req, res) => {
       text: text?.trim() || '',
       imageUrl: imageUrl?.trim() || '',
       poll: pollData,
+      promotion: promotion || null
     });
 
     // Populate author info before returning so the frontend can render immediately

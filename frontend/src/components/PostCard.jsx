@@ -59,6 +59,16 @@ const PostCard = ({ post, onDelete }) => {
   const initials = post.authorUsername?.slice(0, 2).toUpperCase();
   const avatarColor = stringToColor(post.authorUsername);
 
+  const isPromotion = !!post.promotion;
+  const promoThemeColor = isPromotion
+    ? (post.promotion.appName?.toLowerCase().includes('quiz') ||
+       post.promotion.appName?.toLowerCase().includes('pay') ||
+       post.promotion.appName?.toLowerCase().includes('gold') ||
+       post.promotion.appName?.toLowerCase().includes('money')
+        ? '#d4af37' // Gold/Yellow
+        : '#2196F3') // Blue
+    : null;
+
   // ── Like toggle ───────────────────────────────────────────────────────────
   const handleLike = async () => {
     if (!user || likeLoading) return;
@@ -128,7 +138,14 @@ const PostCard = ({ post, onDelete }) => {
   };
 
   return (
-    <Card sx={{ mb: 1.5, borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+    <Card 
+      sx={{ 
+        mb: 1.5, 
+        borderRadius: 3, 
+        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+        border: isPromotion ? `2px solid ${promoThemeColor}` : 'none'
+      }}
+    >
       <CardContent sx={{ pb: 0 }}>
         {/* ── Header row ── */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
@@ -176,99 +193,198 @@ const PostCard = ({ post, onDelete }) => {
           </Box>
         </Box>
 
-        {/* ── Post text ── */}
-        {post.text && (
-          <Typography variant="body2" sx={{ mb: (post.imageUrl || (poll && poll.options?.length > 0)) ? 1.5 : 0, lineHeight: 1.7, color: 'text.primary' }}>
-            {post.text}
-          </Typography>
-        )}
+        {/* ── Promotion layout ── */}
+        {isPromotion ? (
+          <Box sx={{ mt: 1.5 }}>
+            {/* Row: Title on the left, AppName Badge on the right */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, gap: 1 }}>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ color: promoThemeColor, fontSize: '1.1rem' }}>
+                {post.promotion.title}
+              </Typography>
+              <Box
+                sx={{
+                  border: `1px solid ${promoThemeColor}`,
+                  color: promoThemeColor,
+                  borderRadius: 20,
+                  px: 1.5,
+                  py: 0.3,
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {post.promotion.appName}
+              </Box>
+            </Box>
 
-        {/* ── Poll Section ── */}
-        {poll && poll.options && poll.options.length > 0 && (
-          <Box sx={{ mt: 1.5, mb: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {poll.options.map((option) => {
-              const optVotes = option.votes?.length || 0;
-              const percent = totalVotes > 0 ? Math.round((optVotes / totalVotes) * 100) : 0;
-              const isUserChoice = option.votes?.some(v => v === user?.id || v._id === user?.id || v === user?._id);
-
-              return (
-                <Box key={option._id} sx={{ position: 'relative', width: '100%' }}>
-                  {shouldShowResults ? (
-                    // Results Mode
-                    <Box
-                      sx={{
-                        position: 'relative',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        p: 1.25,
-                        borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: isUserChoice ? 'primary.main' : '#e0e0e0',
-                        bgcolor: isUserChoice ? 'rgba(33, 150, 243, 0.03)' : '#fcfcfc',
-                        overflow: 'hidden',
-                        zIndex: 1,
-                      }}
-                    >
-                      {/* Progress bar background */}
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          bottom: 0,
-                          width: `${percent}%`,
-                          bgcolor: isUserChoice ? 'rgba(33, 150, 243, 0.12)' : '#eef0f2',
-                          zIndex: -1,
-                          transition: 'width 0.6s ease-in-out',
-                        }}
-                      />
-                      <Typography variant="body2" fontWeight={isUserChoice ? 700 : 500} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {option.text}
-                        {isUserChoice && <span style={{ fontSize: '0.85rem', color: '#2196F3' }}>✓</span>}
-                      </Typography>
-                      <Typography variant="body2" fontWeight={700}>
-                        {percent}%
-                      </Typography>
-                    </Box>
-                  ) : (
-                    // Vote Mode (clickable option)
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      disabled={voteLoading}
-                      onClick={() => handleVote(option._id)}
-                      sx={{
-                        justifyContent: 'flex-start',
-                        textTransform: 'none',
-                        borderRadius: 2,
-                        p: 1.25,
-                        borderColor: '#bdbdbd',
-                        color: 'text.primary',
-                        fontWeight: 600,
-                        '&:hover': {
-                          bgcolor: 'rgba(33, 150, 243, 0.04)',
-                          borderColor: 'primary.main',
-                        }
-                      }}
-                    >
-                      {option.text}
-                    </Button>
-                  )}
-                </Box>
-              );
-            })}
-
-            {/* Poll footer */}
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'} • {getPollTimeLeft()} {!user ? '• Log in to vote' : ''}
+            {/* Description */}
+            <Typography variant="body2" sx={{ color: 'text.primary', mb: 2.5, lineHeight: 1.6 }}>
+              {post.promotion.description}
             </Typography>
+
+            {/* CTA Button centered */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2.5 }}>
+              <Button
+                variant="contained"
+                href={post.promotion.buttonLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                endIcon={<span>→</span>}
+                sx={{
+                  bgcolor: promoThemeColor,
+                  color: '#fff',
+                  borderRadius: 20,
+                  px: 4,
+                  py: 1,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    bgcolor: promoThemeColor,
+                    opacity: 0.9,
+                    boxShadow: 'none'
+                  }
+                }}
+              >
+                {post.promotion.buttonText}
+              </Button>
+            </Box>
+
+            {/* Category Pill and Info Icon on the bottom right */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Box
+                sx={{
+                  border: '1px solid #9C27B0', // Purple/Pink category color
+                  color: '#9C27B0',
+                  borderRadius: 20,
+                  px: 1.5,
+                  py: 0.3,
+                  fontSize: '0.75rem',
+                  fontWeight: 700
+                }}
+              >
+                {post.promotion.category}
+              </Box>
+              <Tooltip title="Sponsored promotion">
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 18,
+                    height: 18,
+                    borderRadius: '50%',
+                    bgcolor: promoThemeColor,
+                    color: '#fff',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    cursor: 'help'
+                  }}
+                >
+                  i
+                </Box>
+              </Tooltip>
+            </Box>
           </Box>
+        ) : (
+          /* ── Standard post text / poll / image ── */
+          <>
+            {/* ── Post text ── */}
+            {post.text && (
+              <Typography variant="body2" sx={{ mb: (post.imageUrl || (poll && poll.options?.length > 0)) ? 1.5 : 0, lineHeight: 1.7, color: 'text.primary' }}>
+                {post.text}
+              </Typography>
+            )}
+
+            {/* ── Poll Section ── */}
+            {poll && poll.options && poll.options.length > 0 && (
+              <Box sx={{ mt: 1.5, mb: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {poll.options.map((option) => {
+                  const optVotes = option.votes?.length || 0;
+                  const percent = totalVotes > 0 ? Math.round((optVotes / totalVotes) * 100) : 0;
+                  const isUserChoice = option.votes?.some(v => v === user?.id || v._id === user?.id || v === user?._id);
+
+                  return (
+                    <Box key={option._id} sx={{ position: 'relative', width: '100%' }}>
+                      {shouldShowResults ? (
+                        // Results Mode
+                        <Box
+                          sx={{
+                            position: 'relative',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            p: 1.25,
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: isUserChoice ? 'primary.main' : '#e0e0e0',
+                            bgcolor: isUserChoice ? 'rgba(33, 150, 243, 0.03)' : '#fcfcfc',
+                            overflow: 'hidden',
+                            zIndex: 1,
+                          }}
+                        >
+                          {/* Progress bar background */}
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              bottom: 0,
+                              width: `${percent}%`,
+                              bgcolor: isUserChoice ? 'rgba(33, 150, 243, 0.12)' : '#eef0f2',
+                              zIndex: -1,
+                              transition: 'width 0.6s ease-in-out',
+                            }}
+                          />
+                          <Typography variant="body2" fontWeight={isUserChoice ? 700 : 500} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {option.text}
+                            {isUserChoice && <span style={{ fontSize: '0.85rem', color: '#2196F3' }}>✓</span>}
+                          </Typography>
+                          <Typography variant="body2" fontWeight={700}>
+                            {percent}%
+                          </Typography>
+                        </Box>
+                      ) : (
+                        // Vote Mode (clickable option)
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          disabled={voteLoading}
+                          onClick={() => handleVote(option._id)}
+                          sx={{
+                            justifyContent: 'flex-start',
+                            textTransform: 'none',
+                            borderRadius: 2,
+                            p: 1.25,
+                            borderColor: '#bdbdbd',
+                            color: 'text.primary',
+                            fontWeight: 600,
+                            '&:hover': {
+                              bgcolor: 'rgba(33, 150, 243, 0.04)',
+                              borderColor: 'primary.main',
+                            }
+                          }}
+                        >
+                          {option.text}
+                        </Button>
+                      )}
+                    </Box>
+                  );
+                })}
+
+                {/* Poll footer */}
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                  {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'} • {getPollTimeLeft()} {!user ? '• Log in to vote' : ''}
+                </Typography>
+              </Box>
+            )}
+          </>
         )}
       </CardContent>
 
       {/* ── Post image ── */}
-      {post.imageUrl && (
+      {!isPromotion && post.imageUrl && (
         <CardMedia
           component="img"
           image={post.imageUrl}

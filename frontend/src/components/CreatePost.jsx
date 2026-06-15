@@ -59,9 +59,13 @@ const stringToColor = (str = '') => {
   return colors[Math.abs(hash) % colors.length];
 };
 
-const CreatePost = ({ onPostCreated }) => {
+const CreatePost = ({ onPostCreated, feedType: propFeedType, setFeedType: propSetFeedType }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [localFeedType, setLocalFeedType] = useState('posts');
+  const feedType = propFeedType || localFeedType;
+  const setFeedType = propSetFeedType || setLocalFeedType;
+
   const [text, setText] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [showImageInput, setShowImageInput] = useState(false);
@@ -74,6 +78,14 @@ const CreatePost = ({ onPostCreated }) => {
   const [showPollInput, setShowPollInput] = useState(false);
   const [pollOptions, setPollOptions] = useState(['', '']);
   const [pollDuration, setPollDuration] = useState(24); // in hours (24, 72, 168)
+
+  // Promotion State
+  const [appName, setAppName] = useState('');
+  const [promoTitle, setPromoTitle] = useState('');
+  const [promoDesc, setPromoDesc] = useState('');
+  const [buttonText, setButtonText] = useState('');
+  const [buttonLink, setButtonLink] = useState('');
+  const [promoCategory, setPromoCategory] = useState('Refer And Earn');
 
   // Emoji Picker State
   const [emojiAnchor, setEmojiAnchor] = useState(null);
@@ -129,34 +141,56 @@ const CreatePost = ({ onPostCreated }) => {
     e.preventDefault();
     setError('');
 
-    if (showPollInput) {
-      if (!text.trim()) {
-        setError('Please enter a question for your poll.');
-        return;
-      }
-      const validOptions = pollOptions.map(opt => opt.trim()).filter(Boolean);
-      if (validOptions.length < 2) {
-        setError('Please enter at least 2 valid poll options.');
+    if (feedType === 'promotions') {
+      if (!appName.trim() || !promoTitle.trim() || !promoDesc.trim() || !buttonText.trim() || !buttonLink.trim()) {
+        setError('Please fill in all promotion fields.');
         return;
       }
     } else {
-      if (!text.trim() && !imageUrl.trim()) {
-        setError('Please add some text or an image URL.');
-        return;
+      if (showPollInput) {
+        if (!text.trim()) {
+          setError('Please enter a question for your poll.');
+          return;
+        }
+        const validOptions = pollOptions.map(opt => opt.trim()).filter(Boolean);
+        if (validOptions.length < 2) {
+          setError('Please enter at least 2 valid poll options.');
+          return;
+        }
+      } else {
+        if (!text.trim() && !imageUrl.trim()) {
+          setError('Please add some text or an image URL.');
+          return;
+        }
       }
     }
 
     setLoading(true);
     try {
-      const payload = showPollInput
-        ? { text: text.trim(), poll: pollOptions.map(opt => opt.trim()).filter(Boolean), pollDuration }
-        : { text: text.trim(), imageUrl: imageUrl.trim() };
+      let payload;
+      if (feedType === 'promotions') {
+        payload = {
+          promotion: {
+            appName: appName.trim(),
+            title: promoTitle.trim(),
+            description: promoDesc.trim(),
+            buttonText: buttonText.trim(),
+            buttonLink: buttonLink.trim(),
+            category: promoCategory
+          }
+        };
+      } else {
+        payload = showPollInput
+          ? { text: text.trim(), poll: pollOptions.map(opt => opt.trim()).filter(Boolean), pollDuration }
+          : { text: text.trim(), imageUrl: imageUrl.trim() };
+      }
 
       const { data } = await postsAPI.createPost(payload);
       if (onPostCreated) {
         onPostCreated(data);
         setText(''); setImageUrl(''); setShowImageInput(false);
         setShowPollInput(false); setPollOptions(['', '']); setPollDuration(24);
+        setAppName(''); setPromoTitle(''); setPromoDesc(''); setButtonText(''); setButtonLink('');
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       } else {
@@ -175,190 +209,323 @@ const CreatePost = ({ onPostCreated }) => {
   return (
     <Card sx={{ mb: 1.5, borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
       <CardContent sx={{ pb: '12px !important' }}>
-        {/* Header of Create Poll Card */}
-        {showPollInput ? (
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="subtitle1" fontWeight={800} color="text.primary">
-              Create Poll
-            </Typography>
-            <Box sx={{ display: 'flex', bgcolor: '#f1f3f4', borderRadius: 20, p: 0.5 }}>
-              <Button
-                size="small"
-                variant="contained"
-                sx={{
-                  borderRadius: 20,
-                  bgcolor: '#2196F3',
-                  color: '#fff',
-                  boxShadow: 'none',
-                  px: 2,
-                  py: 0.5,
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  '&:hover': { bgcolor: '#1976D2', boxShadow: 'none' }
-                }}
-              >
-                All Posts
-              </Button>
-              <Button
-                size="small"
-                sx={{
-                  borderRadius: 20,
-                  color: '#757575',
-                  px: 2,
-                  py: 0.5,
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                }}
-              >
-                Promotions
-              </Button>
-            </Box>
+        {/* Header of Card */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="subtitle1" fontWeight={800} color="text.primary">
+            {feedType === 'promotions' ? 'Create Promotion' : showPollInput ? 'Create Poll' : 'Create Post'}
+          </Typography>
+          <Box sx={{ display: 'flex', bgcolor: '#f1f3f4', borderRadius: 20, p: 0.5 }}>
+            <Button
+              size="small"
+              onClick={() => {
+                setFeedType('posts');
+              }}
+              sx={{
+                borderRadius: 20,
+                bgcolor: feedType === 'posts' ? '#2196F3' : 'transparent',
+                color: feedType === 'posts' ? '#fff' : '#757575',
+                boxShadow: 'none',
+                px: 2,
+                py: 0.5,
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                textTransform: 'none',
+                '&:hover': { bgcolor: feedType === 'posts' ? '#1976D2' : 'transparent', boxShadow: 'none' }
+              }}
+            >
+              All Posts
+            </Button>
+            <Button
+              size="small"
+              onClick={() => {
+                setFeedType('promotions');
+                setShowPollInput(false);
+                setShowImageInput(false);
+              }}
+              sx={{
+                borderRadius: 20,
+                bgcolor: feedType === 'promotions' ? '#2196F3' : 'transparent',
+                color: feedType === 'promotions' ? '#fff' : '#757575',
+                boxShadow: 'none',
+                px: 2,
+                py: 0.5,
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                textTransform: 'none',
+                '&:hover': { bgcolor: feedType === 'promotions' ? '#1976D2' : 'transparent', boxShadow: 'none' }
+              }}
+            >
+              Promotions
+            </Button>
           </Box>
-        ) : null}
-
-        {/* Row: avatar (only in non-poll mode) + textarea */}
-        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
-          {!showPollInput && (
-            <Avatar sx={{ width: 42, height: 42, bgcolor: stringToColor(user?.username),
-                          fontWeight: 700, fontSize: '0.85rem', mt: 0.5 }}>
-              {initials}
-            </Avatar>
-          )}
-          <TextField
-            fullWidth multiline minRows={showPollInput ? 2 : 2} maxRows={8}
-            placeholder={showPollInput ? "Ask a question..." : "What's on your mind?"}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            disabled={loading}
-            variant="outlined"
-            inputProps={{ id: 'post-textarea', maxLength: 1000 }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 3,
-                backgroundColor: showPollInput ? '#ffffff' : '#f5f5f5',
-                '&:hover': { backgroundColor: showPollInput ? '#ffffff' : '#efefef' },
-                '& fieldset': { border: showPollInput ? '1px solid #e0e0e0' : 'none' },
-                '&.Mui-focused': { backgroundColor: showPollInput ? '#ffffff' : '#f0f0f0' },
-              },
-            }}
-          />
         </Box>
 
-        {/* Image URL input */}
-        <Collapse in={showImageInput}>
-          <Box sx={{ mt: 1.5, display: 'flex', gap: 1, alignItems: 'center' }}>
+        {feedType === 'promotions' ? (
+          /* Create Promotion Mode Form */
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1 }}>
             <TextField
-              fullWidth size="small"
-              placeholder="Paste image URL here…"
-              value={imageUrl}
-              onChange={(e) => { setImageUrl(e.target.value); setImagePreviewError(false); }}
+              fullWidth
+              size="small"
+              placeholder="App/Website Name (e.g. TaskPlanet)"
+              value={appName}
+              onChange={(e) => setAppName(e.target.value)}
               disabled={loading}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 3,
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e0e0e0',
+                  '& fieldset': { border: 'none' },
+                  '&.Mui-focused': { borderColor: '#2196F3' }
+                }
+              }}
             />
-            <IconButton size="small" onClick={() => { setShowImageInput(false); setImageUrl(''); }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-
-          {/* Image preview */}
-          {showPreview && (
-            <Box sx={{ mt: 1, borderRadius: 2, overflow: 'hidden', maxHeight: 240 }}>
-              <img src={imageUrl} alt="Preview" style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }}
-                onError={() => setImagePreviewError(true)} />
-            </Box>
-          )}
-        </Collapse>
-
-        {/* Poll Options Input */}
-        <Collapse in={showPollInput}>
-          <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {pollOptions.map((option, index) => (
-              <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                <TextField
-                  fullWidth
-                  placeholder={`Option ${index + 1}`}
-                  value={option}
-                  onChange={(e) => handlePollOptionChange(index, e.target.value)}
-                  disabled={loading}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 3,
-                      backgroundColor: '#fafafa',
-                      border: '1px solid #e0e0e0',
-                      '& fieldset': { border: 'none' },
-                      '&:hover': { backgroundColor: '#f5f5f5' },
-                      '&.Mui-focused': { backgroundColor: '#ffffff', borderColor: '#2196F3' }
-                    }
-                  }}
-                />
-                {pollOptions.length > 2 && (
-                  <IconButton size="small" onClick={() => handleRemovePollOption(index)}>
-                    <DeleteOutlineIcon fontSize="small" color="error" />
-                  </IconButton>
-                )}
-              </Box>
-            ))}
-            
-            {pollOptions.length < 5 && (
-              <Button
-                onClick={handleAddPollOption}
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Promotion Title"
+              value={promoTitle}
+              onChange={(e) => setPromoTitle(e.target.value)}
+              disabled={loading}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 3,
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e0e0e0',
+                  '& fieldset': { border: 'none' },
+                  '&.Mui-focused': { borderColor: '#2196F3' }
+                }
+              }}
+            />
+            <TextField
+              fullWidth
+              multiline
+              minRows={2}
+              maxRows={6}
+              placeholder="Promotion Description..."
+              value={promoDesc}
+              onChange={(e) => setPromoDesc(e.target.value)}
+              disabled={loading}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 3,
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e0e0e0',
+                  '& fieldset': { border: 'none' },
+                  '&.Mui-focused': { borderColor: '#2196F3' }
+                }
+              }}
+            />
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Button Text (e.g. Shop Now)"
+                value={buttonText}
+                onChange={(e) => setButtonText(e.target.value)}
+                disabled={loading}
                 sx={{
-                  alignSelf: 'center',
-                  mt: 0.5,
-                  fontWeight: 700,
-                  color: '#2196F3',
-                  textTransform: 'none',
-                  '&:hover': { background: 'none', textDecoration: 'underline' }
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e0e0e0',
+                    '& fieldset': { border: 'none' },
+                    '&.Mui-focused': { borderColor: '#2196F3' }
+                  }
+                }}
+              />
+              <TextField
+                select
+                fullWidth
+                size="small"
+                value={promoCategory}
+                onChange={(e) => setPromoCategory(e.target.value)}
+                disabled={loading}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e0e0e0',
+                    '& fieldset': { border: 'none' },
+                    '&.Mui-focused': { borderColor: '#2196F3' }
+                  }
+                }}
+                slotProps={{
+                  select: {
+                    native: true
+                  }
                 }}
               >
-                + Add Option
-              </Button>
-            )}
+                <option value="Refer And Earn">Refer And Earn</option>
+                <option value="Crypto">Crypto</option>
+              </TextField>
+            </Box>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Button Link (https://...)"
+              value={buttonLink}
+              onChange={(e) => setButtonLink(e.target.value)}
+              disabled={loading}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 3,
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e0e0e0',
+                  '& fieldset': { border: 'none' },
+                  '&.Mui-focused': { borderColor: '#2196F3' }
+                }
+              }}
+            />
+          </Box>
+        ) : (
+          /* Create Post / Poll Mode Form */
+          <>
+            {/* Row: avatar (only in non-poll mode) + textarea */}
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+              {!showPollInput && (
+                <Avatar sx={{ width: 42, height: 42, bgcolor: stringToColor(user?.username),
+                              fontWeight: 700, fontSize: '0.85rem', mt: 0.5 }}>
+                  {initials}
+                </Avatar>
+              )}
+              <TextField
+                fullWidth multiline minRows={2} maxRows={8}
+                placeholder={showPollInput ? "Ask a question..." : "What's on your mind?"}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                disabled={loading}
+                variant="outlined"
+                inputProps={{ id: 'post-textarea', maxLength: 1000 }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    backgroundColor: showPollInput ? '#ffffff' : '#f5f5f5',
+                    '&:hover': { backgroundColor: showPollInput ? '#ffffff' : '#efefef' },
+                    '& fieldset': { border: showPollInput ? '1px solid #e0e0e0' : 'none' },
+                    '&.Mui-focused': { backgroundColor: showPollInput ? '#ffffff' : '#f0f0f0' },
+                  },
+                }}
+              />
+            </Box>
 
-            {/* Poll Duration Selection */}
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontWeight: 700 }}>
-                Poll Duration:
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                {[
-                  { label: '24h', value: 24 },
-                  { label: '3 Days', value: 72 },
-                  { label: '7 Days', value: 168 }
-                ].map((pill) => {
-                  const isActive = pollDuration === pill.value;
-                  return (
-                    <Button
-                      key={pill.value}
-                      onClick={() => setPollDuration(pill.value)}
+            {/* Image URL input */}
+            <Collapse in={showImageInput}>
+              <Box sx={{ mt: 1.5, display: 'flex', gap: 1, alignItems: 'center' }}>
+                <TextField
+                  fullWidth size="small"
+                  placeholder="Paste image URL here…"
+                  value={imageUrl}
+                  onChange={(e) => { setImageUrl(e.target.value); setImagePreviewError(false); }}
+                  disabled={loading}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                />
+                <IconButton size="small" onClick={() => { setShowImageInput(false); setImageUrl(''); }}>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
+
+              {/* Image preview */}
+              {showPreview && (
+                <Box sx={{ mt: 1, borderRadius: 2, overflow: 'hidden', maxHeight: 240 }}>
+                  <img src={imageUrl} alt="Preview" style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }}
+                    onError={() => setImagePreviewError(true)} />
+                </Box>
+              )}
+            </Collapse>
+
+            {/* Poll Options Input */}
+            <Collapse in={showPollInput}>
+              <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {pollOptions.map((option, index) => (
+                  <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <TextField
+                      fullWidth
+                      placeholder={`Option ${index + 1}`}
+                      value={option}
+                      onChange={(e) => handlePollOptionChange(index, e.target.value)}
+                      disabled={loading}
                       sx={{
-                        borderRadius: 20,
-                        bgcolor: isActive ? '#2196F3' : '#f5f5f5',
-                        color: isActive ? '#fff' : '#757575',
-                        textTransform: 'none',
-                        px: 2.5,
-                        py: 0.5,
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        boxShadow: 'none',
-                        '&:hover': {
-                          bgcolor: isActive ? '#1976D2' : '#e0e0e0',
-                          boxShadow: 'none',
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 3,
+                          backgroundColor: '#fafafa',
+                          border: '1px solid #e0e0e0',
+                          '& fieldset': { border: 'none' },
+                          '&:hover': { backgroundColor: '#f5f5f5' },
+                          '&.Mui-focused': { backgroundColor: '#ffffff', borderColor: '#2196F3' }
                         }
                       }}
-                    >
-                      {pill.label}
-                    </Button>
-                  );
-                })}
+                    />
+                    {pollOptions.length > 2 && (
+                      <IconButton size="small" onClick={() => handleRemovePollOption(index)}>
+                        <DeleteOutlineIcon fontSize="small" color="error" />
+                      </IconButton>
+                    )}
+                  </Box>
+                ))}
+                
+                {pollOptions.length < 5 && (
+                  <Button
+                    onClick={handleAddPollOption}
+                    sx={{
+                      alignSelf: 'center',
+                      mt: 0.5,
+                      fontWeight: 700,
+                      color: '#2196F3',
+                      textTransform: 'none',
+                      '&:hover': { background: 'none', textDecoration: 'underline' }
+                    }}
+                  >
+                    + Add Option
+                  </Button>
+                )}
+
+                {/* Poll Duration Selection */}
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontWeight: 700 }}>
+                    Poll Duration:
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    {[
+                      { label: '24h', value: 24 },
+                      { label: '3 Days', value: 72 },
+                      { label: '7 Days', value: 168 }
+                    ].map((pill) => {
+                      const isActive = pollDuration === pill.value;
+                      return (
+                        <Button
+                          key={pill.value}
+                          onClick={() => setPollDuration(pill.value)}
+                          sx={{
+                            borderRadius: 20,
+                            bgcolor: isActive ? '#2196F3' : '#f5f5f5',
+                            color: isActive ? '#fff' : '#757575',
+                            textTransform: 'none',
+                            px: 2.5,
+                            py: 0.5,
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            boxShadow: 'none',
+                            '&:hover': {
+                              bgcolor: isActive ? '#1976D2' : '#e0e0e0',
+                              boxShadow: 'none',
+                            }
+                          }}
+                        >
+                          {pill.label}
+                        </Button>
+                      );
+                    })}
+                  </Box>
+                </Box>
               </Box>
-            </Box>
-          </Box>
-        </Collapse>
+            </Collapse>
+          </>
+        )}
 
         {/* Error / Success */}
         {error && <Alert severity="error" sx={{ mt: 1.5, borderRadius: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ mt: 1.5, borderRadius: 2 }}>Post published!</Alert>}
+        {success && <Alert severity="success" sx={{ mt: 1.5, borderRadius: 2 }}>{feedType === 'promotions' ? 'Promotion published!' : 'Post published!'}</Alert>}
 
         <Divider sx={{ my: 1.5 }} />
 
@@ -367,25 +534,38 @@ const CreatePost = ({ onPostCreated }) => {
           {/* Action icons */}
           <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
             <Tooltip title="Add image URL">
-              <IconButton size="small" color={showImageInput ? 'primary' : 'default'}
+              <IconButton
+                size="small"
+                color={showImageInput ? 'primary' : 'default'}
+                disabled={feedType === 'promotions'}
                 onClick={() => {
                   setShowImageInput((v) => !v);
                   setShowPollInput(false);
-                }}>
+                }}
+              >
                 <PhotoCameraOutlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
             <Tooltip title="Emoji">
-              <IconButton size="small" onClick={handleEmojiOpen} color={isEmojiOpen ? 'primary' : 'default'}>
+              <IconButton
+                size="small"
+                onClick={handleEmojiOpen}
+                disabled={feedType === 'promotions'}
+                color={isEmojiOpen ? 'primary' : 'default'}
+              >
                 <EmojiEmotionsOutlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
             <Tooltip title="Create Poll">
-              <IconButton size="small" color={showPollInput ? 'primary' : 'default'}
+              <IconButton
+                size="small"
+                color={showPollInput ? 'primary' : 'default'}
+                disabled={feedType === 'promotions'}
                 onClick={() => {
                   setShowPollInput((v) => !v);
                   setShowImageInput(false);
-                }}>
+                }}
+              >
                 <SegmentIcon fontSize="small" sx={{ transform: 'rotate(180deg)' }} />
               </IconButton>
             </Tooltip>
@@ -393,8 +573,17 @@ const CreatePost = ({ onPostCreated }) => {
             {/* Megaphone Promote option */}
             <Button
               startIcon={<CampaignIcon />}
+              onClick={() => {
+                if (feedType === 'promotions') {
+                  setFeedType('posts');
+                } else {
+                  setFeedType('promotions');
+                  setShowPollInput(false);
+                  setShowImageInput(false);
+                }
+              }}
               sx={{
-                color: '#2196F3',
+                color: feedType === 'promotions' ? '#1976D2' : '#2196F3',
                 fontWeight: 700,
                 textTransform: 'none',
                 fontSize: '0.85rem',
@@ -407,12 +596,21 @@ const CreatePost = ({ onPostCreated }) => {
             </Button>
           </Box>
 
-          {/* Post button */}
+          {/* Post/Promote button */}
           <Button
             variant="contained"
             startIcon={loading ? null : <SendIcon sx={{ transform: 'rotate(-45deg)', mt: -0.3 }} />}
             onClick={handleSubmit}
-            disabled={loading || (showPollInput ? (!text.trim() || pollOptions.filter(o => o.trim() !== '').length < 2) : (!text.trim() && !imageUrl.trim()))}
+            disabled={
+              loading || 
+              (feedType === 'promotions' 
+                ? (!appName.trim() || !promoTitle.trim() || !promoDesc.trim() || !buttonText.trim() || !buttonLink.trim())
+                : (showPollInput 
+                  ? (!text.trim() || pollOptions.filter(o => o.trim() !== '').length < 2) 
+                  : (!text.trim() && !imageUrl.trim())
+                )
+              )
+            }
             sx={{
               borderRadius: 20,
               px: 3,
@@ -424,13 +622,13 @@ const CreatePost = ({ onPostCreated }) => {
                 bgcolor: '#e0e0e0',
                 color: '#9e9e9e',
               },
-              '&:hover': {
-                bgcolor: '#1976D2',
-                boxShadow: 'none',
+              '&:not(.Mui-disabled)': {
+                bgcolor: '#2196F3',
+                '&:hover': { bgcolor: '#1976D2' }
               }
             }}
           >
-            {loading ? <CircularProgress size={18} color="inherit" /> : 'Post'}
+            {loading ? <CircularProgress size={18} color="inherit" /> : feedType === 'promotions' ? 'Promote' : 'Post'}
           </Button>
         </Box>
 
