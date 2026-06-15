@@ -1,46 +1,56 @@
 /**
  * components/CreatePost.jsx
- * Form for creating a new post.
- * Can be used as a standalone page (/create) or embedded in the feed.
- * Both text and imageUrl are optional, but at least one is required.
+ * MUI Paper card — "What's on your mind?" create post form.
+ * Matches TaskPlanet's create post area at the top of the feed.
  */
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Card, CardContent, Box, TextField, Button, Avatar, Typography,
+  Divider, IconButton, Tooltip, CircularProgress, Alert, Collapse,
+} from '@mui/material';
+import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined';
+import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
+import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
+import SendIcon from '@mui/icons-material/Send';
+import CloseIcon from '@mui/icons-material/Close';
+import { useAuth } from '../context/AuthContext';
 import { postsAPI } from '../services/api';
-import './CreatePost.css';
+
+const stringToColor = (str = '') => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  const colors = ['#2196F3','#E91E63','#9C27B0','#FF5722','#4CAF50','#FF9800','#00BCD4'];
+  return colors[Math.abs(hash) % colors.length];
+};
 
 const CreatePost = ({ onPostCreated }) => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [text, setText] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [showImageInput, setShowImageInput] = useState(false);
+  const [imagePreviewError, setImagePreviewError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [imagePreviewError, setImagePreviewError] = useState(false);
+  const [success, setSuccess] = useState(false);
 
-  // ─── Submit handler ────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    // At least one field must be filled
     if (!text.trim() && !imageUrl.trim()) {
       setError('Please add some text or an image URL.');
       return;
     }
-
     setLoading(true);
     try {
-      const { data } = await postsAPI.createPost({
-        text: text.trim(),
-        imageUrl: imageUrl.trim(),
-      });
-
-      // If embedded in feed, notify parent; otherwise navigate back to feed
+      const { data } = await postsAPI.createPost({ text: text.trim(), imageUrl: imageUrl.trim() });
       if (onPostCreated) {
         onPostCreated(data);
-        setText('');
-        setImageUrl('');
+        setText(''); setImageUrl(''); setShowImageInput(false);
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
       } else {
         navigate('/');
       }
@@ -51,83 +61,99 @@ const CreatePost = ({ onPostCreated }) => {
     }
   };
 
-  // Preview image validity
-  const showPreview = imageUrl.trim() && !imagePreviewError;
+  const initials = user?.username?.slice(0, 2).toUpperCase() || '';
+  const showPreview = imageUrl.trim() && !imagePreviewError && showImageInput;
 
   return (
-    <form className="create-post-form glass-card" onSubmit={handleSubmit}>
-      <h2 className="create-post-title">
-        <span className="gradient-text">Create a Post</span>
-      </h2>
-
-      {/* ── Text area ── */}
-      <div className="form-group">
-        <label className="form-label">What's on your mind?</label>
-        <textarea
-          className="form-input create-post-textarea"
-          placeholder="Share something with the community…"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          maxLength={1000}
-          rows={4}
-          disabled={loading}
-        />
-        <span className="char-count">{text.length}/1000</span>
-      </div>
-
-      {/* ── Image URL input ── */}
-      <div className="form-group">
-        <label className="form-label">Image URL (optional)</label>
-        <input
-          type="url"
-          className="form-input"
-          placeholder="https://example.com/image.jpg"
-          value={imageUrl}
-          onChange={(e) => { setImageUrl(e.target.value); setImagePreviewError(false); }}
-          disabled={loading}
-        />
-      </div>
-
-      {/* ── Image preview ── */}
-      {showPreview && (
-        <div className="image-preview-wrap">
-          <img
-            src={imageUrl}
-            alt="Preview"
-            className="image-preview"
-            onError={() => setImagePreviewError(true)}
+    <Card sx={{ mb: 1.5, borderRadius: 3 }}>
+      <CardContent sx={{ pb: '12px !important' }}>
+        {/* Row: avatar + textarea */}
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+          <Avatar sx={{ width: 42, height: 42, bgcolor: stringToColor(user?.username),
+                        fontWeight: 700, fontSize: '0.85rem', mt: 0.5 }}>
+            {initials}
+          </Avatar>
+          <TextField
+            fullWidth multiline minRows={2} maxRows={8}
+            placeholder="What's on your mind?"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            disabled={loading}
+            variant="outlined"
+            inputProps={{ maxLength: 1000 }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 3,
+                backgroundColor: '#f5f5f5',
+                '&:hover': { backgroundColor: '#efefef' },
+                '& fieldset': { border: 'none' },
+                '&.Mui-focused': { backgroundColor: '#f0f0f0' },
+              },
+            }}
           />
-          <button
-            type="button"
-            className="image-preview-remove"
-            onClick={() => setImageUrl('')}
-          >
-            ✕
-          </button>
-        </div>
-      )}
+        </Box>
 
-      {/* ── Error ── */}
-      {error && <p className="alert alert-error">{error}</p>}
+        {/* Image URL input */}
+        <Collapse in={showImageInput}>
+          <Box sx={{ mt: 1.5, display: 'flex', gap: 1, alignItems: 'center' }}>
+            <TextField
+              fullWidth size="small"
+              placeholder="Paste image URL here…"
+              value={imageUrl}
+              onChange={(e) => { setImageUrl(e.target.value); setImagePreviewError(false); }}
+              disabled={loading}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+            <IconButton size="small" onClick={() => { setShowImageInput(false); setImageUrl(''); }}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
 
-      {/* ── Submit ── */}
-      <div className="create-post-actions">
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={loading || (!text.trim() && !imageUrl.trim())}
-        >
-          {loading ? (
-            <>
-              <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
-              Posting…
-            </>
-          ) : (
-            'Publish Post ✦'
+          {/* Image preview */}
+          {showPreview && (
+            <Box sx={{ mt: 1, borderRadius: 2, overflow: 'hidden', maxHeight: 240 }}>
+              <img src={imageUrl} alt="Preview" style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }}
+                onError={() => setImagePreviewError(true)} />
+            </Box>
           )}
-        </button>
-      </div>
-    </form>
+        </Collapse>
+
+        {/* Error / Success */}
+        {error && <Alert severity="error" sx={{ mt: 1.5, borderRadius: 2 }}>{error}</Alert>}
+        {success && <Alert severity="success" sx={{ mt: 1.5, borderRadius: 2 }}>Post published!</Alert>}
+
+        <Divider sx={{ my: 1.5 }} />
+
+        {/* Toolbar + submit */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Action icons */}
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Tooltip title="Add image URL">
+              <IconButton size="small" color={showImageInput ? 'primary' : 'default'}
+                onClick={() => setShowImageInput((v) => !v)}>
+                <PhotoCameraOutlinedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Emoji">
+              <IconButton size="small"><EmojiEmotionsOutlinedIcon fontSize="small" /></IconButton>
+            </Tooltip>
+            <Tooltip title="Link">
+              <IconButton size="small"><LinkOutlinedIcon fontSize="small" /></IconButton>
+            </Tooltip>
+          </Box>
+
+          {/* Post button */}
+          <Button
+            variant="contained" endIcon={loading ? null : <SendIcon />}
+            onClick={handleSubmit}
+            disabled={loading || (!text.trim() && !imageUrl.trim())}
+            sx={{ borderRadius: 5, px: 3, py: 0.8 }}
+          >
+            {loading ? <CircularProgress size={18} color="inherit" /> : 'Post'}
+          </Button>
+        </Box>
+      </CardContent>
+    </Card>
   );
 };
 

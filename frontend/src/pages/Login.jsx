@@ -1,42 +1,35 @@
 /**
- * pages/Login.jsx
- * Login page — email + password form with JWT auth.
- * Redirects to feed on success.
+ * pages/Login.jsx — MUI styled login form
  */
-
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
+import {
+  Box, Card, CardContent, TextField, Button, Typography,
+  Link, Alert, CircularProgress, Divider,
+} from '@mui/material';
 import { useAuth } from '../context/AuthContext';
-import './Auth.css';
 
 const Login = () => {
   const { login } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  // Redirect to original destination after login, or default to feed
+  const navigate  = useNavigate();
+  const location  = useLocation();
   const from = location.state?.from?.pathname || '/';
 
   const [formData, setFormData] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
 
   const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormData((p) => ({ ...p, [e.target.name]: e.target.value }));
     setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { email, password } = formData;
-    if (!email || !password) {
-      setError('Please fill in all fields.');
-      return;
-    }
-
+    if (!formData.email || !formData.password) return setError('Please fill in all fields.');
     setLoading(true);
     try {
-      await login(email, password);
+      await login(formData.email, formData.password);
       navigate(from, { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
@@ -46,85 +39,52 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-page">
-      {/* Decorative background blobs */}
-      <div className="auth-blob auth-blob-1" />
-      <div className="auth-blob auth-blob-2" />
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default',
+               display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+      <Card sx={{ width: '100%', maxWidth: 420, borderRadius: 4 }}>
+        <CardContent sx={{ p: 4 }}>
+          {/* Logo */}
+          <Typography variant="h5" fontWeight={800} color="primary"
+            sx={{ mb: 0.5, letterSpacing: '-0.5px' }}>
+            Social<span style={{ color: '#212121' }}>Post</span>
+          </Typography>
+          <Typography variant="h6" fontWeight={700} sx={{ mb: 0.5 }}>Welcome back 👋</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Sign in to continue to your feed
+          </Typography>
 
-      <div className="auth-card glass-card">
-        {/* Logo */}
-        <div className="auth-logo">
-          <span className="logo-icon-lg">✦</span>
-          <h1 className="auth-app-name gradient-text">SocialPost</h1>
-        </div>
-
-        <div className="auth-header">
-          <h2 className="auth-title">Welcome back</h2>
-          <p className="auth-subtitle">Sign in to continue to your feed</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="auth-form" noValidate>
-          {/* Email */}
-          <div className="form-group">
-            <label className="form-label" htmlFor="email">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              className="form-input"
-              placeholder="you@example.com"
-              value={formData.email}
-              onChange={handleChange}
-              autoComplete="email"
-              disabled={loading}
-              required
+          <Box component="form" onSubmit={handleSubmit} noValidate>
+            <TextField
+              fullWidth label="Email" name="email" type="email"
+              value={formData.email} onChange={handleChange}
+              disabled={loading} required margin="normal"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
-          </div>
-
-          {/* Password */}
-          <div className="form-group">
-            <label className="form-label" htmlFor="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              className="form-input"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={handleChange}
-              autoComplete="current-password"
-              disabled={loading}
-              required
+            <TextField
+              fullWidth label="Password" name="password" type="password"
+              value={formData.password} onChange={handleChange}
+              disabled={loading} required margin="normal"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
-          </div>
 
-          {/* Error */}
-          {error && <p className="alert alert-error">{error}</p>}
+            {error && <Alert severity="error" sx={{ mt: 1.5, borderRadius: 2 }}>{error}</Alert>}
 
-          {/* Submit */}
-          <button
-            type="submit"
-            className="btn btn-primary auth-submit"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
-                Signing in…
-              </>
-            ) : (
-              'Sign In →'
-            )}
-          </button>
-        </form>
+            <Button fullWidth type="submit" variant="contained" size="large"
+              disabled={loading}
+              sx={{ mt: 2.5, mb: 1.5, borderRadius: 2, py: 1.3, fontWeight: 700, fontSize: '1rem' }}>
+              {loading ? <CircularProgress size={22} color="inherit" /> : 'Sign In'}
+            </Button>
 
-        {/* Switch to signup */}
-        <p className="auth-switch">
-          Don't have an account?{' '}
-          <Link to="/signup" className="auth-link">Create one</Link>
-        </p>
-      </div>
-    </div>
+            <Divider sx={{ my: 1.5 }} />
+
+            <Typography variant="body2" color="text.secondary" textAlign="center">
+              Don't have an account?{' '}
+              <Link component={RouterLink} to="/signup" fontWeight={600}>Create one</Link>
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
   );
 };
 

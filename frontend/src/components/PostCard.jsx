@@ -1,18 +1,28 @@
 /**
  * components/PostCard.jsx
- * Displays a single post with: author info, text, image, like button,
- * comment count, and a collapsible comment section.
- * Like updates are instant (optimistic UI).
+ * MUI Card — matches TaskPlanet social card:
+ * Avatar | Name @handle | time | [Follow]
+ * Post text / image
+ * ♡ likes  💬 comments  ↗ shares
  */
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import {
+  Card, CardContent, CardActions, CardMedia,
+  Avatar, Typography, Box, IconButton, Button,
+  Divider, Collapse, Tooltip,
+} from '@mui/material';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutlined';
+import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import { useAuth } from '../context/AuthContext';
 import { postsAPI } from '../services/api';
 import CommentSection from './CommentSection';
-import './PostCard.css';
 
-// ─── Helper: relative time string ─────────────────────────────────────────────
+// ─── Relative time ─────────────────────────────────────────────────────────────
 const timeAgo = (dateStr) => {
   const diff = (Date.now() - new Date(dateStr)) / 1000;
   if (diff < 60) return 'just now';
@@ -22,43 +32,48 @@ const timeAgo = (dateStr) => {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
+// ─── Avatar color from username ────────────────────────────────────────────────
+const stringToColor = (str = '') => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  const colors = ['#2196F3','#E91E63','#9C27B0','#FF5722','#4CAF50','#FF9800','#00BCD4'];
+  return colors[Math.abs(hash) % colors.length];
+};
+
 const PostCard = ({ post, onDelete }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
-  // ─── Local state for optimistic like updates ───────────────────────────────
-  const [liked, setLiked] = useState(
-    user ? post.likes?.includes(user.id) : false
-  );
+  const [liked, setLiked] = useState(user ? post.likes?.includes(user.id) : false);
   const [likesCount, setLikesCount] = useState(post.likes?.length || 0);
   const [likeLoading, setLikeLoading] = useState(false);
   const [commentsCount, setCommentsCount] = useState(post.comments?.length || 0);
   const [showComments, setShowComments] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // ─── Toggle like ───────────────────────────────────────────────────────────
+  const isOwner = user && (user.id === post.author?._id || user.id === post.author);
+  const initials = post.authorUsername?.slice(0, 2).toUpperCase();
+  const avatarColor = stringToColor(post.authorUsername);
+
+  // ── Like toggle ───────────────────────────────────────────────────────────
   const handleLike = async () => {
     if (!user || likeLoading) return;
-
-    // Optimistically update UI before the API call completes
-    setLiked((prev) => !prev);
-    setLikesCount((prev) => (liked ? prev - 1 : prev + 1));
+    setLiked((p) => !p);
+    setLikesCount((p) => (liked ? p - 1 : p + 1));
     setLikeLoading(true);
-
     try {
       const { data } = await postsAPI.likePost(post._id);
-      // Sync with server response in case of race conditions
       setLiked(data.liked);
       setLikesCount(data.likesCount);
     } catch {
-      // Revert optimistic update on failure
-      setLiked((prev) => !prev);
-      setLikesCount((prev) => (liked ? prev + 1 : prev - 1));
+      setLiked((p) => !p);
+      setLikesCount((p) => (liked ? p + 1 : p - 1));
     } finally {
       setLikeLoading(false);
     }
   };
 
-  // ─── Delete post ───────────────────────────────────────────────────────────
+  // ── Delete ────────────────────────────────────────────────────────────────
   const handleDelete = async () => {
     if (!window.confirm('Delete this post?')) return;
     setDeleteLoading(true);
@@ -71,90 +86,121 @@ const PostCard = ({ post, onDelete }) => {
     }
   };
 
-  const isOwner = user && (user.id === post.author?._id || user.id === post.author);
-
   return (
-    <article className="post-card glass-card fade-in-up">
-      {/* ── Post Header ── */}
-      <div className="post-header">
-        <Link to={`/profile/${post.authorUsername}`} className="post-author-link">
-          <div className="avatar post-avatar">
-            {post.author?.avatar ? (
-              <img src={post.author.avatar} alt={post.authorUsername} />
-            ) : (
-              post.authorUsername?.slice(0, 2).toUpperCase()
-            )}
-          </div>
-          <div>
-            <p className="post-username">{post.authorUsername}</p>
-            <p className="post-time">{timeAgo(post.createdAt)}</p>
-          </div>
-        </Link>
-
-        {/* ── Delete button (owner only) ── */}
-        {isOwner && (
-          <button
-            className="btn btn-danger post-delete-btn"
-            onClick={handleDelete}
-            disabled={deleteLoading}
-            title="Delete post"
+    <Card sx={{ mb: 1.5, borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+      <CardContent sx={{ pb: 0 }}>
+        {/* ── Header row ── */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+          {/* Avatar */}
+          <Avatar
+            sx={{ width: 44, height: 44, bgcolor: avatarColor, fontWeight: 700,
+                  fontSize: '0.9rem', cursor: 'pointer' }}
+            onClick={() => navigate(`/profile/${post.authorUsername}`)}
           >
-            {deleteLoading ? '…' : '🗑'}
-          </button>
+            {post.author?.avatar ? null : initials}
+          </Avatar>
+
+          {/* Name + handle + time */}
+          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+              <Typography variant="subtitle2" fontWeight={700} sx={{ cursor: 'pointer' }}
+                onClick={() => navigate(`/profile/${post.authorUsername}`)}>
+                {post.authorUsername}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                @{post.authorUsername}
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              {timeAgo(post.createdAt)}
+            </Typography>
+          </Box>
+
+          {/* Follow / Delete */}
+          <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+            {!isOwner && (
+              <Button variant="contained" size="small"
+                sx={{ borderRadius: 5, px: 2, py: 0.3, fontSize: '0.78rem', minWidth: 0 }}>
+                Follow
+              </Button>
+            )}
+            {isOwner && (
+              <Tooltip title="Delete post">
+                <IconButton size="small" color="error" onClick={handleDelete}
+                  disabled={deleteLoading}>
+                  <DeleteOutlineIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        </Box>
+
+        {/* ── Post text ── */}
+        {post.text && (
+          <Typography variant="body2" sx={{ mb: post.imageUrl ? 1.5 : 0, lineHeight: 1.7, color: 'text.primary' }}>
+            {post.text}
+          </Typography>
         )}
-      </div>
+      </CardContent>
 
-      {/* ── Post Content ── */}
-      <div className="post-content">
-        {post.text && <p className="post-text">{post.text}</p>}
-        {post.imageUrl && (
-          <div className="post-image-wrap">
-            <img
-              src={post.imageUrl}
-              alt="Post"
-              className="post-image"
-              loading="lazy"
-              onError={(e) => {
-                // Hide broken images gracefully
-                e.target.closest('.post-image-wrap').style.display = 'none';
-              }}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* ── Post Actions ── */}
-      <div className="post-actions">
-        {/* Like button */}
-        <button
-          className={`action-btn like-btn ${liked ? 'liked' : ''}`}
-          onClick={handleLike}
-          disabled={!user}
-          title={user ? (liked ? 'Unlike' : 'Like') : 'Log in to like'}
-        >
-          <span className="action-icon">{liked ? '❤️' : '🤍'}</span>
-          <span className="action-count">{likesCount}</span>
-        </button>
-
-        {/* Comment toggle */}
-        <button
-          className={`action-btn ${showComments ? 'active' : ''}`}
-          onClick={() => setShowComments((v) => !v)}
-        >
-          <span className="action-icon">💬</span>
-          <span className="action-count">{commentsCount}</span>
-        </button>
-      </div>
-
-      {/* ── Comments (collapsible) ── */}
-      {showComments && (
-        <CommentSection
-          postId={post._id}
-          initialComments={post.comments || []}
-          onCommentAdded={(count) => setCommentsCount(count)}
+      {/* ── Post image ── */}
+      {post.imageUrl && (
+        <CardMedia
+          component="img"
+          image={post.imageUrl}
+          alt="Post image"
+          onError={(e) => e.target.closest('.MuiCardMedia-root')?.remove?.()}
+          sx={{ maxHeight: 400, objectFit: 'cover' }}
         />
       )}
-    </article>
+
+      <Divider sx={{ mx: 2, mt: 1 }} />
+
+      {/* ── Action bar: ♡ likes  💬 comments  ↗ shares ── */}
+      <CardActions sx={{ px: 2, py: 0.5 }}>
+        {/* Like */}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <IconButton size="small" onClick={handleLike} disabled={!user}
+            sx={{ color: liked ? 'error.main' : 'text.secondary' }}>
+            {liked ? <FavoriteIcon fontSize="small" /> : <FavoriteBorderIcon fontSize="small" />}
+          </IconButton>
+          <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>
+            {likesCount}
+          </Typography>
+        </Box>
+
+        {/* Comment */}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <IconButton size="small" onClick={() => setShowComments((v) => !v)}
+            sx={{ color: showComments ? 'primary.main' : 'text.secondary' }}>
+            <ChatBubbleOutlineIcon fontSize="small" />
+          </IconButton>
+          <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>
+            {commentsCount}
+          </Typography>
+        </Box>
+
+        {/* Share */}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <IconButton size="small" sx={{ color: 'text.secondary' }}>
+            <ShareOutlinedIcon fontSize="small" />
+          </IconButton>
+          <Typography variant="caption" color="text.secondary">0</Typography>
+        </Box>
+      </CardActions>
+
+      {/* ── Comments section (collapsible) ── */}
+      <Collapse in={showComments} timeout="auto" unmountOnExit>
+        <Divider sx={{ mx: 2 }} />
+        <Box sx={{ px: 2, py: 1 }}>
+          <CommentSection
+            postId={post._id}
+            initialComments={post.comments || []}
+            onCommentAdded={(count) => setCommentsCount(count)}
+          />
+        </Box>
+      </Collapse>
+    </Card>
   );
 };
 

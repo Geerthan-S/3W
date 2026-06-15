@@ -1,11 +1,10 @@
 /**
- * App.jsx
- * Root component — sets up React Router with all pages.
- * Includes a ProtectedRoute wrapper that redirects to /login
- * if the user is not authenticated.
+ * App.jsx — Root component with MUI ThemeProvider (light, TaskPlanet-inspired)
+ * and React Router setup.
  */
 
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Pages
@@ -18,63 +17,91 @@ import CreatePostPage from './pages/CreatePostPage';
 // Layout
 import Navbar from './components/Navbar';
 
-// ─── Protected Route Wrapper ───────────────────────────────────────────────────
-// Redirects unauthenticated users to /login, preserving the intended destination.
+// ─── MUI Theme — light, blue primary matching TaskPlanet ──────────────────────
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#2196F3',       // TaskPlanet blue
+      contrastText: '#fff',
+    },
+    secondary: {
+      main: '#FF9800',
+    },
+    background: {
+      default: '#F0F2F5',    // Light grey page bg
+      paper: '#FFFFFF',
+    },
+    text: {
+      primary: '#212121',
+      secondary: '#757575',
+    },
+  },
+  typography: {
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    button: { textTransform: 'none', fontWeight: 600 },
+  },
+  shape: { borderRadius: 12 },
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+          borderRadius: 12,
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        containedPrimary: {
+          borderRadius: 20,
+          boxShadow: 'none',
+          '&:hover': { boxShadow: '0 2px 8px rgba(33,150,243,0.3)' },
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: { fontWeight: 600 },
+      },
+    },
+  },
+});
+
+// ─── Protected Route ──────────────────────────────────────────────────────────
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
-
-  // Show nothing while verifying the token on first load
   if (loading) return null;
-
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
   return children;
 };
 
 // ─── App Layout ───────────────────────────────────────────────────────────────
-// Wraps all routes with the sticky Navbar.
-const AppLayout = () => {
-  return (
-    <>
-      <Navbar />
-      <main>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Feed />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/profile/:username" element={<Profile />} />
+const AppLayout = () => (
+  <>
+    <Navbar />
+    <Routes>
+      <Route path="/"                element={<Feed />} />
+      <Route path="/login"           element={<Login />} />
+      <Route path="/signup"          element={<Signup />} />
+      <Route path="/profile/:username" element={<Profile />} />
+      <Route path="/create"          element={<ProtectedRoute><CreatePostPage /></ProtectedRoute>} />
+      <Route path="*"                element={<Navigate to="/" replace />} />
+    </Routes>
+  </>
+);
 
-          {/* Protected routes — require authentication */}
-          <Route
-            path="/create"
-            element={
-              <ProtectedRoute>
-                <CreatePostPage />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Catch-all: redirect unknown routes to feed */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-    </>
-  );
-};
-
-// ─── Root App ────────────────────────────────────────────────────────────────
-const App = () => {
-  return (
-    <BrowserRouter>
+// ─── Root ─────────────────────────────────────────────────────────────────────
+const App = () => (
+  <BrowserRouter>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
       <AuthProvider>
         <AppLayout />
       </AuthProvider>
-    </BrowserRouter>
-  );
-};
+    </ThemeProvider>
+  </BrowserRouter>
+);
 
 export default App;

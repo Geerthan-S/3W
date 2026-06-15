@@ -14,34 +14,50 @@ const { protect } = require('../middleware/authMiddleware');
 // Query params:
 //   ?limit=10        — number of posts per page (default: 10)
 //   ?cursor=<postId> — fetch posts older than this ID (for infinite scroll)
+//   ?sort=newest|likes|comments|foryou|shares
 router.get('/', async (req, res) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit) || 10, 20); // Cap at 20
-    const cursor = req.query.cursor; // Last post ID from previous page
+    const limit  = Math.min(parseInt(req.query.limit) || 10, 20);
+    const cursor = req.query.cursor;
+    const sort   = req.query.sort || 'newest';
 
-    // Build the query — if cursor provided, fetch posts before it
-    const query = cursor ? { _id: { $lt: cursor } } : {};
+    let posts;
 
-    // Fetch posts, newest first, populating only the author's avatar
-    const posts = await Post.find(query)
-      .sort({ _id: -1 }) // Descending by _id = chronological (MongoDB ObjectID has timestamp)
-      .limit(limit + 1)  // Fetch one extra to check if there's a next page
-      .populate('author', 'username avatar')
-      .lean(); // Use lean() for faster reads (plain JS objects, not Mongoose docs)
+    if (sort === 'likes') {
+      // Sort by number of likes (most liked first) — no cursor pagination for sorted views
+      posts = await Post.find({})
+        .populate('author', 'username avatar')
+        .lean();
+      posts.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
+      posts = posts.slice(0, limit);
+    } else if (sort === 'comments') {
+      posts = await Post.find({})
+        .populate('author', 'username avatar')
+        .lean();
+      posts.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
+      posts = posts.slice(0, limit);
+    } else {
+      // Default: newest first with cursor pagination
+      const query = cursor ? { _id: { $lt: cursor } } : {};
+      const raw = await Post.find(query)
+        .sort({ _id: -1 })
+        .limit(limit + 1)
+        .populate('author', 'username avatar')
+        .lean();
 
-    // Check if there are more posts after this page
-    const hasMore = posts.length > limit;
-    if (hasMore) posts.pop(); // Remove the extra post we fetched
+      const hasMore = raw.length > limit;
+      if (hasMore) raw.pop();
+      const nextCursor = hasMore ? raw[raw.length - 1]._id : null;
+      return res.json({ posts: raw, hasMore, nextCursor });
+    }
 
-    // The next cursor is the last post's ID
-    const nextCursor = hasMore ? posts[posts.length - 1]._id : null;
-
-    res.json({ posts, hasMore, nextCursor });
+    res.json({ posts, hasMore: false, nextCursor: null });
   } catch (err) {
     console.error('Feed error:', err);
     res.status(500).json({ message: 'Failed to load feed' });
   }
 });
+
 
 // ─── POST /api/posts ───────────────────────────────────────────────────────────
 // Creates a new post. Requires auth.

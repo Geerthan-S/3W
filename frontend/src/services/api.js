@@ -7,12 +7,12 @@
 
 import axios from 'axios';
 
-// Base URL — reads from Vite env var or falls back to localhost
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Base URL — reads from VITE_API_URL (set per environment, no localhost fallback)
+const API = import.meta.env.VITE_API_URL;
 
-// Create an axios instance with default config
+// Create an axios instance — baseURL includes /api prefix
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: `${API}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -60,8 +60,8 @@ export const postsAPI = {
    * @param {string|null} cursor - Last post ID from previous page (for infinite scroll)
    * @param {number} limit - Posts per page
    */
-  getFeed: (cursor = null, limit = 10) => {
-    const params = { limit };
+  getFeed: (cursor = null, limit = 10, sort = 'newest') => {
+    const params = { limit, sort };
     if (cursor) params.cursor = cursor;
     return api.get('/posts', { params });
   },

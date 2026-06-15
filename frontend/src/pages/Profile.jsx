@@ -1,29 +1,34 @@
 /**
- * pages/Profile.jsx (accessible at /profile/:username)
- * Shows the user's public profile: avatar, bio, post count, and their posts.
- * Can be visited by anyone — no auth required to view.
+ * pages/Profile.jsx — MUI profile with stats + post list
  */
-
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link as RouterLink } from 'react-router-dom';
+import {
+  Box, Container, Avatar, Typography, Card, CardContent,
+  Grid, Divider, Stack, Skeleton, Alert, Button,
+} from '@mui/material';
 import { postsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/PostCard';
-import './Profile.css';
+
+const stringToColor = (str = '') => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  const colors = ['#2196F3','#E91E63','#9C27B0','#FF5722','#4CAF50','#FF9800','#00BCD4'];
+  return colors[Math.abs(hash) % colors.length];
+};
 
 const Profile = () => {
   const { username } = useParams();
   const { user: currentUser } = useAuth();
 
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts]     = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError]     = useState('');
 
-  // ─── Load user posts ───────────────────────────────────────────────────────
   useEffect(() => {
     const fetchPosts = async () => {
-      setLoading(true);
-      setError('');
+      setLoading(true); setError('');
       try {
         const { data } = await postsAPI.getUserPosts(username);
         setPosts(data.posts);
@@ -33,111 +38,110 @@ const Profile = () => {
         setLoading(false);
       }
     };
-
     fetchPosts();
   }, [username]);
 
-  // ─── Handle post deleted from profile ─────────────────────────────────────
-  const handlePostDeleted = (postId) => {
-    setPosts((prev) => prev.filter((p) => p._id !== postId));
-  };
+  const handlePostDeleted = (id) => setPosts((p) => p.filter((post) => post._id !== id));
 
-  // ─── Derive stats from posts ───────────────────────────────────────────────
-  const totalLikes = posts.reduce((sum, p) => sum + (p.likes?.length || 0), 0);
-  const totalComments = posts.reduce((sum, p) => sum + (p.comments?.length || 0), 0);
+  const totalLikes    = posts.reduce((s, p) => s + (p.likes?.length || 0), 0);
+  const totalComments = posts.reduce((s, p) => s + (p.comments?.length || 0), 0);
+  const isOwn         = currentUser?.username === username;
 
-  // Get initials for avatar
-  const initials = username?.slice(0, 2).toUpperCase();
-
-  // Check if viewing own profile
-  const isOwnProfile = currentUser?.username === username;
+  const statCard = (label, value) => (
+    <Box sx={{ textAlign: 'center' }}>
+      <Typography variant="h6" fontWeight={800}>{value}</Typography>
+      <Typography variant="caption" color="text.secondary">{label}</Typography>
+    </Box>
+  );
 
   return (
-    <div className="profile-page">
-      {/* ── Profile Header ── */}
-      <div className="profile-header-banner">
-        <div className="profile-banner-gradient" />
-        <div className="container">
-          <div className="profile-header">
-            {/* Avatar */}
-            <div className="profile-avatar-wrap">
-              <div className="avatar avatar-lg profile-avatar">{initials}</div>
-            </div>
+    <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', pb: 6 }}>
+      <Container maxWidth="sm" sx={{ pt: 3 }}>
+        {/* ── Profile header card ── */}
+        <Card sx={{ mb: 2, borderRadius: 3 }}>
+          <CardContent sx={{ pt: 3, pb: '16px !important' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Avatar sx={{ width: 72, height: 72, bgcolor: stringToColor(username),
+                            fontWeight: 700, fontSize: '1.5rem' }}>
+                {username?.slice(0, 2).toUpperCase()}
+              </Avatar>
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h6" fontWeight={800}>{username}</Typography>
+                  {isOwn && (
+                    <Typography variant="caption" sx={{ px: 1, py: 0.2, bgcolor: 'primary.main',
+                      color: '#fff', borderRadius: 5, fontWeight: 700, fontSize: '0.65rem' }}>
+                      You
+                    </Typography>
+                  )}
+                </Box>
+                <Typography variant="body2" color="text.secondary">@{username}</Typography>
+              </Box>
+            </Box>
 
-            {/* Info */}
-            <div className="profile-info">
-              <h1 className="profile-username">{username}</h1>
-              {isOwnProfile && (
-                <span className="profile-badge">You</span>
-              )}
-              <div className="profile-stats">
-                <div className="stat-item">
-                  <span className="stat-value">{posts.length}</span>
-                  <span className="stat-label">Posts</span>
-                </div>
-                <div className="stat-divider" />
-                <div className="stat-item">
-                  <span className="stat-value">{totalLikes}</span>
-                  <span className="stat-label">Likes received</span>
-                </div>
-                <div className="stat-divider" />
-                <div className="stat-item">
-                  <span className="stat-value">{totalComments}</span>
-                  <span className="stat-label">Comments</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+            <Divider sx={{ mb: 2 }} />
 
-      {/* ── Posts ── */}
-      <div className="container profile-content">
-        <div className="profile-section-label">
-          <span className="gradient-text">Posts by {username}</span>
-        </div>
+            {/* Stats row */}
+            <Grid container spacing={2} columns={3}>
+              <Grid item xs={1}>{statCard('Posts', posts.length)}</Grid>
+              <Grid item xs={1}>{statCard('Likes', totalLikes)}</Grid>
+              <Grid item xs={1}>{statCard('Comments', totalComments)}</Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
-        {/* Loading */}
+        {/* ── Posts ── */}
+        <Typography variant="subtitle2" fontWeight={700} color="text.secondary"
+          sx={{ mb: 1.5, px: 0.5 }}>
+          Posts by {username}
+        </Typography>
+
         {loading && (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-            <div className="spinner" />
-          </div>
+          <Stack spacing={1.5}>
+            {[1,2].map((i) => (
+              <Card key={i} sx={{ borderRadius: 3, p: 2 }}>
+                <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5 }}>
+                  <Skeleton variant="circular" width={44} height={44} />
+                  <Box sx={{ flex: 1 }}>
+                    <Skeleton variant="text" width="40%" />
+                    <Skeleton variant="text" width="25%" />
+                  </Box>
+                </Box>
+                <Skeleton variant="text" width="80%" />
+                <Skeleton variant="text" width="60%" />
+              </Card>
+            ))}
+          </Stack>
         )}
 
-        {/* Error */}
-        {error && <p className="alert alert-error">{error}</p>}
+        {error && <Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert>}
 
-        {/* Posts list */}
         {!loading && !error && (
-          <>
-            {posts.length === 0 ? (
-              <div className="profile-empty glass-card">
-                <p className="profile-empty-emoji">🌟</p>
-                <h3>No posts yet</h3>
-                {isOwnProfile ? (
-                  <p>
-                    Share your first post!{' '}
-                    <Link to="/create" className="auth-link">Create one now →</Link>
-                  </p>
-                ) : (
-                  <p>{username} hasn't posted anything yet.</p>
-                )}
-              </div>
-            ) : (
-              <div className="posts-list">
-                {posts.map((post) => (
-                  <PostCard
-                    key={post._id}
-                    post={post}
-                    onDelete={handlePostDeleted}
-                  />
-                ))}
-              </div>
-            )}
-          </>
+          posts.length === 0 ? (
+            <Card sx={{ p: 4, textAlign: 'center', borderRadius: 3 }}>
+              <Typography variant="h5" sx={{ mb: 1 }}>🌟</Typography>
+              <Typography variant="subtitle1" fontWeight={700} gutterBottom>No posts yet</Typography>
+              {isOwn ? (
+                <Button component={RouterLink} to="/create" variant="contained"
+                  sx={{ mt: 1, borderRadius: 5 }}>
+                  Create your first post
+                </Button>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  {username} hasn't posted anything yet.
+                </Typography>
+              )}
+            </Card>
+          ) : (
+            <Stack spacing={0}>
+              {posts.map((post) => (
+                <PostCard key={post._id} post={post} onDelete={handlePostDeleted} />
+              ))}
+            </Stack>
+          )
         )}
-      </div>
-    </div>
+      </Container>
+    </Box>
   );
 };
 
