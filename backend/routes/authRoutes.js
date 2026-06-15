@@ -151,6 +151,36 @@ router.put('/profile', protect, async (req, res) => {
   }
 });
 
+// ─── GET /api/auth/search ──────────────────────────────────────────────────────
+// Searches for users by matching username prefix or content
+router.get('/search', async (req, res) => {
+  try {
+    const q = req.query.q;
+    if (!q || !q.trim()) {
+      return res.json([]);
+    }
+    const users = await User.find({
+      username: { $regex: q.trim(), $options: 'i' }
+    }).select('username avatar bio followers following').limit(20);
+    
+    // Format response to match other public profile details
+    const formatted = users.map(user => ({
+      _id: user._id,
+      username: user.username,
+      bio: user.bio,
+      avatar: user.avatar,
+      followersCount: user.followers?.length || 0,
+      followingCount: user.following?.length || 0,
+      followers: user.followers || [],
+      following: user.following || [],
+    }));
+    res.json(formatted);
+  } catch (err) {
+    console.error('Search users error:', err);
+    res.status(500).json({ message: 'Server error searching users' });
+  }
+});
+
 // ─── GET /api/auth/profile/:username ───────────────────────────────────────────
 // Returns public profile details of a user by username.
 router.get('/profile/:username', async (req, res) => {

@@ -13,6 +13,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
 import CreatePostPage from './pages/CreatePostPage';
+import SearchPage from './pages/SearchPage';
 
 // Layout
 import Navbar from './components/Navbar';
@@ -87,6 +88,7 @@ const AppLayout = () => (
       <Route path="/signup"          element={<Signup />} />
       <Route path="/profile/:username" element={<Profile />} />
       <Route path="/create"          element={<ProtectedRoute><CreatePostPage /></ProtectedRoute>} />
+      <Route path="/search"          element={<SearchPage />} />
       <Route path="*"                element={<Navigate to="/" replace />} />
     </Routes>
   </>

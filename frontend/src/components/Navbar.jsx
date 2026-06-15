@@ -73,9 +73,13 @@ const Navbar = () => {
         </Typography>
 
         {/* Search bar */}
-        <Search>
+        <Search onClick={() => navigate('/search')} sx={{ cursor: 'pointer' }}>
           <SearchIconWrapper><SearchIcon fontSize="small" /></SearchIconWrapper>
-          <StyledInputBase placeholder="Search users, posts…" inputProps={{ 'aria-label': 'search' }} />
+          <StyledInputBase 
+            placeholder="Search users, posts…" 
+            inputProps={{ 'aria-label': 'search', readOnly: true }} 
+            sx={{ cursor: 'pointer', '& input': { cursor: 'pointer' } }}
+          />
         </Search>
 
         <Box sx={{ flexGrow: 1 }} />

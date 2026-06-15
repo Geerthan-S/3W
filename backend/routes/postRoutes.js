@@ -22,6 +22,7 @@ router.get('/', async (req, res) => {
     const sort   = req.query.sort || 'newest';
     const type   = req.query.type || 'posts';
     const category = req.query.category;
+    const search = req.query.search;
 
     // Build base filter based on type and category
     const baseFilter = {};
@@ -30,11 +31,28 @@ router.get('/', async (req, res) => {
       if (category && ['Refer And Earn', 'Crypto'].includes(category)) {
         baseFilter['promotion.category'] = category;
       }
+      if (search) {
+        const searchRegex = { $regex: search, $options: 'i' };
+        baseFilter.$or = [
+          { 'promotion.title': searchRegex },
+          { 'promotion.description': searchRegex },
+          { 'promotion.appName': searchRegex }
+        ];
+      }
     } else {
-      baseFilter.$or = [
-        { promotion: null },
-        { promotion: { $exists: false } }
+      baseFilter.$and = [
+        {
+          $or: [
+            { promotion: null },
+            { promotion: { $exists: false } }
+          ]
+        }
       ];
+      if (search) {
+        baseFilter.$and.push({
+          text: { $regex: search, $options: 'i' }
+        });
+      }
     }
 
     let posts;

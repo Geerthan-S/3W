@@ -60,6 +60,9 @@ export const authAPI = {
 
   /** Follow or unfollow a user by their username */
   followUser: (username) => api.post(`/api/auth/profile/${username}/follow`),
+
+  /** Search users by query string */
+  searchUsers: (query) => api.get(`/api/auth/search?q=${encodeURIComponent(query)}`),
 };
 
 // ─── Posts API ─────────────────────────────────────────────────────────────────
@@ -69,10 +72,11 @@ export const postsAPI = {
    * @param {string|null} cursor - Last post ID from previous page (for infinite scroll)
    * @param {number} limit - Posts per page
    */
-  getFeed: (cursor = null, limit = 10, sort = 'newest', type = 'posts', category = null) => {
+  getFeed: (cursor = null, limit = 10, sort = 'newest', type = 'posts', category = null, search = null) => {
     const params = { limit, sort, type };
     if (cursor) params.cursor = cursor;
     if (category) params.category = category;
+    if (search) params.search = search;
     return api.get('/api/posts', { params });
   },
 
