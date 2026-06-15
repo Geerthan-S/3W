@@ -222,6 +222,7 @@ router.delete('/:id', protect, async (req, res) => {
     console.error('Delete post error:', err);
     res.status(500).json({ message: 'Failed to delete post' });
   }
+});
 // ─── POST /api/posts/:id/vote ──────────────────────────────────────────────────
 // Casts a vote on a poll option. Requires auth.
 router.post('/:id/vote', protect, async (req, res) => {
