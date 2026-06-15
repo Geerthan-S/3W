@@ -93,7 +93,7 @@ const Navbar = () => {
           <>
             {/* Create post */}
             <Button
-              variant="text"
+              variant="contained"
               color="primary"
               onClick={() => navigate('/create')}
               startIcon={<AddCircleOutlineIcon />}
@@ -102,10 +102,12 @@ const Navbar = () => {
                 textTransform: 'none',
                 mr: 1,
                 borderRadius: 20,
-                px: 2,
-                py: 0.5,
+                px: 2.5,
+                py: 0.6,
+                boxShadow: 'none',
                 '&:hover': {
-                  bgcolor: 'rgba(33, 150, 243, 0.08)'
+                  bgcolor: '#1976D2',
+                  boxShadow: '0 2px 8px rgba(33,150,243,0.3)',
                 }
               }}
             >
