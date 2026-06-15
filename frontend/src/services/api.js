@@ -10,9 +10,9 @@ import axios from 'axios';
 // Base URL — reads from VITE_API_URL (set per environment, no localhost fallback)
 const API = import.meta.env.VITE_API_URL;
 
-// Create an axios instance — baseURL includes /api prefix
+// Create an axios instance — baseURL is the root VITE_API_URL
 const api = axios.create({
-  baseURL: `${API}/api`,
+  baseURL: API,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -44,13 +44,13 @@ api.interceptors.response.use(
 // ─── Auth API ──────────────────────────────────────────────────────────────────
 export const authAPI = {
   /** Register a new user */
-  register: (data) => api.post('/auth/register', data),
+  register: (data) => api.post('/api/auth/register', data),
 
   /** Log in with email and password */
-  login: (data) => api.post('/auth/login', data),
+  login: (data) => api.post('/api/auth/login', data),
 
   /** Get the currently logged-in user */
-  getMe: () => api.get('/auth/me'),
+  getMe: () => api.get('/api/auth/me'),
 };
 
 // ─── Posts API ─────────────────────────────────────────────────────────────────
@@ -63,23 +63,23 @@ export const postsAPI = {
   getFeed: (cursor = null, limit = 10, sort = 'newest') => {
     const params = { limit, sort };
     if (cursor) params.cursor = cursor;
-    return api.get('/posts', { params });
+    return api.get('/api/posts', { params });
   },
 
   /** Create a new post (text and/or imageUrl) */
-  createPost: (data) => api.post('/posts', data),
+  createPost: (data) => api.post('/api/posts', data),
 
   /** Toggle like on a post */
-  likePost: (postId) => api.post(`/posts/${postId}/like`),
+  likePost: (postId) => api.post(`/api/posts/${postId}/like`),
 
   /** Add a comment to a post */
-  addComment: (postId, text) => api.post(`/posts/${postId}/comment`, { text }),
+  addComment: (postId, text) => api.post(`/api/posts/${postId}/comment`, { text }),
 
   /** Delete own post */
-  deletePost: (postId) => api.delete(`/posts/${postId}`),
+  deletePost: (postId) => api.delete(`/api/posts/${postId}`),
 
   /** Get all posts by a specific username */
-  getUserPosts: (username) => api.get(`/posts/user/${username}`),
+  getUserPosts: (username) => api.get(`/api/posts/user/${username}`),
 };
 
 export default api;
