@@ -19,6 +19,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import SendIcon from '@mui/icons-material/Send';
 import CloseIcon from '@mui/icons-material/Close';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { postsAPI } from '../services/api';
 
 const EMOJI_CATEGORIES = [
@@ -61,6 +62,7 @@ const stringToColor = (str = '') => {
 
 const CreatePost = ({ onPostCreated, feedType: propFeedType, setFeedType: propSetFeedType }) => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [localFeedType, setLocalFeedType] = useState('posts');
   const feedType = propFeedType || localFeedType;
@@ -140,27 +142,26 @@ const CreatePost = ({ onPostCreated, feedType: propFeedType, setFeedType: propSe
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
     if (feedType === 'promotions') {
       if (!appName.trim() || !promoTitle.trim() || !promoDesc.trim() || !buttonText.trim() || !buttonLink.trim()) {
-        setError('Please fill in all promotion fields.');
+        showToast('Please fill in all promotion fields.', 'warning');
         return;
       }
     } else {
       if (showPollInput) {
         if (!text.trim()) {
-          setError('Please enter a question for your poll.');
+          showToast('Please enter a question for your poll.', 'warning');
           return;
         }
         const validOptions = pollOptions.map(opt => opt.trim()).filter(Boolean);
         if (validOptions.length < 2) {
-          setError('Please enter at least 2 valid poll options.');
+          showToast('Please enter at least 2 valid poll options.', 'warning');
           return;
         }
       } else {
         if (!text.trim() && !imageUrl.trim()) {
-          setError('Please add some text or an image URL.');
+          showToast('Please add some text or an image URL.', 'warning');
           return;
         }
       }
@@ -188,19 +189,18 @@ const CreatePost = ({ onPostCreated, feedType: propFeedType, setFeedType: propSe
       }
 
       const { data } = await postsAPI.createPost(payload);
+      showToast(feedType === 'promotions' ? 'Promotion published!' : 'Post published!', 'success');
       if (onPostCreated) {
         onPostCreated(data);
         setText(''); setImageUrl(''); setShowImageInput(false);
         setShowPollInput(false); setPollOptions(['', '']); setPollDuration(24);
         setAppName(''); setPromoTitle(''); setPromoDesc(''); setButtonText(''); setButtonLink('');
         setPromoColor('#2196F3');
-        setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
       } else {
         navigate('/');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create post');
+      showToast(err.response?.data?.message || 'Failed to create post', 'error');
     } finally {
       setLoading(false);
     }
@@ -576,9 +576,7 @@ const CreatePost = ({ onPostCreated, feedType: propFeedType, setFeedType: propSe
           </>
         )}
 
-        {/* Error / Success */}
-        {error && <Alert severity="error" sx={{ mt: 1.5, borderRadius: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ mt: 1.5, borderRadius: 2 }}>{feedType === 'promotions' ? 'Promotion published!' : 'Post published!'}</Alert>}
+
 
         <Divider sx={{ my: 1.5 }} />
 

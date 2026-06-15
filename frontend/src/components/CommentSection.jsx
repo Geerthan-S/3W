@@ -10,6 +10,7 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { postsAPI } from '../services/api';
 
 const stringToColor = (str = '') => {
@@ -29,6 +30,7 @@ const timeAgo = (dateStr) => {
 
 const CommentSection = ({ postId, initialComments, onCommentAdded }) => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [comments, setComments] = useState(initialComments);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,8 +47,10 @@ const CommentSection = ({ postId, initialComments, onCommentAdded }) => {
       setComments(newComments);
       setText('');
       if (onCommentAdded) onCommentAdded(data.commentsCount);
+      showToast('Comment posted successfully!', 'success');
     } catch {
       setError('Failed to post comment');
+      showToast('Failed to post comment', 'error');
     } finally {
       setLoading(false);
     }

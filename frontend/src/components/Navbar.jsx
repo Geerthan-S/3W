@@ -12,6 +12,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutlined';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { alpha, styled } from '@mui/material/styles';
 
 // ── Styled search bar ─────────────────────────────────────────────────────────
@@ -50,12 +51,18 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleMenu = (e) => setAnchorEl(e.currentTarget);
   const handleClose = () => setAnchorEl(null);
-  const handleLogout = () => { handleClose(); logout(); navigate('/login'); };
+  const handleLogout = () => { 
+    handleClose(); 
+    logout(); 
+    showToast('Logged out successfully!', 'info');
+    navigate('/login'); 
+  };
 
   const initials = user?.username?.slice(0, 2).toUpperCase() || '';
 

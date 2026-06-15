@@ -10,7 +10,9 @@ import {
 } from '@mui/material';
 import { postsAPI, authAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import PostCard from '../components/PostCard';
+import PostCardSkeleton from '../components/PostCardSkeleton';
 
 const stringToColor = (str = '') => {
   let hash = 0;
@@ -22,6 +24,7 @@ const stringToColor = (str = '') => {
 const Profile = () => {
   const { username } = useParams();
   const { user: currentUser, updateUser } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const [posts, setPosts]     = useState([]);
@@ -74,8 +77,11 @@ const Profile = () => {
         updateUser({ avatar: data.avatar, bio: data.bio });
       }
       setEditOpen(false);
+      showToast('Profile updated successfully!', 'success');
     } catch (err) {
-      setSaveError(err.response?.data?.message || 'Failed to update profile');
+      const errMsg = err.response?.data?.message || 'Failed to update profile';
+      setSaveError(errMsg);
+      showToast(errMsg, 'error');
     } finally {
       setSaving(false);
     }
@@ -114,8 +120,11 @@ const Profile = () => {
       if (updateUser) {
         updateUser({ following: data.currentUserFollowing });
       }
+
+      showToast(data.followed ? `Followed @${username}` : `Unfollowed @${username}`, 'success');
     } catch (err) {
       console.error('Follow toggle failed:', err);
+      showToast('Failed to toggle follow', 'error');
     } finally {
       setFollowLoading(false);
     }
@@ -204,19 +213,9 @@ const Profile = () => {
         </Typography>
 
         {loading && (
-          <Stack spacing={1.5}>
-            {[1,2].map((i) => (
-              <Card key={i} sx={{ borderRadius: 3, p: 2 }}>
-                <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5 }}>
-                  <Skeleton variant="circular" width={44} height={44} />
-                  <Box sx={{ flex: 1 }}>
-                    <Skeleton variant="text" width="40%" />
-                    <Skeleton variant="text" width="25%" />
-                  </Box>
-                </Box>
-                <Skeleton variant="text" width="80%" />
-                <Skeleton variant="text" width="60%" />
-              </Card>
+          <Stack spacing={0}>
+            {[1, 2].map((i) => (
+              <PostCardSkeleton key={i} />
             ))}
           </Stack>
         )}

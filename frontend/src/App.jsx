@@ -6,6 +6,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 
 // Pages
 import Feed from './pages/Feed';
@@ -99,9 +100,11 @@ const App = () => (
   <BrowserRouter>
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AuthProvider>
-        <AppLayout />
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <AppLayout />
+        </AuthProvider>
+      </ToastProvider>
     </ThemeProvider>
   </BrowserRouter>
 );

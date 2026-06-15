@@ -15,6 +15,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { postsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/PostCard';
+import PostCardSkeleton from '../components/PostCardSkeleton';
 import CreatePost from '../components/CreatePost';
 
 const FILTER_TABS = [
@@ -189,20 +190,9 @@ const Feed = () => {
 
         {/* ── Loading skeletons ── */}
         {loading && (
-          <Stack spacing={1.5}>
+          <Stack spacing={0}>
             {[1, 2, 3].map((i) => (
-              <Paper key={i} sx={{ p: 2, borderRadius: 3 }}>
-                <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5 }}>
-                  <Skeleton variant="circular" width={44} height={44} />
-                  <Box sx={{ flex: 1 }}>
-                    <Skeleton variant="text" width="40%" height={18} />
-                    <Skeleton variant="text" width="25%" height={14} />
-                  </Box>
-                </Box>
-                <Skeleton variant="text" width="90%" />
-                <Skeleton variant="text" width="70%" />
-                <Skeleton variant="rounded" height={180} sx={{ mt: 1, borderRadius: 2 }} />
-              </Paper>
+              <PostCardSkeleton key={i} />
             ))}
           </Stack>
         )}

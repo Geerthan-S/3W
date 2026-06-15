@@ -8,9 +8,11 @@ import {
   Link, Alert, CircularProgress, Divider,
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 const Signup = () => {
   const { register } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -27,17 +29,36 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const { username, email, password, confirmPassword } = formData;
-    if (!username || !email || !password) return setError('All fields are required.');
-    if (password !== confirmPassword)      return setError('Passwords do not match.');
-    if (password.length < 6)              return setError('Password must be at least 6 characters.');
-    if (username.length < 3)              return setError('Username must be at least 3 characters.');
+    if (!username || !email || !password) {
+      showToast('All fields are required.', 'warning');
+      setError('All fields are required.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      showToast('Passwords do not match.', 'warning');
+      setError('Passwords do not match.');
+      return;
+    }
+    if (password.length < 6) {
+      showToast('Password must be at least 6 characters.', 'warning');
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    if (username.length < 3) {
+      showToast('Username must be at least 3 characters.', 'warning');
+      setError('Username must be at least 3 characters.');
+      return;
+    }
 
     setLoading(true);
     try {
       await register(username, email, password);
+      showToast('Registered and logged in successfully!', 'success');
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      const errMsg = err.response?.data?.message || 'Registration failed. Please try again.';
+      setError(errMsg);
+      showToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -80,7 +101,7 @@ const Signup = () => {
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
-            {error && <Alert severity="error" sx={{ mt: 1.5, borderRadius: 2 }}>{error}</Alert>}
+
 
             <Button fullWidth type="submit" variant="contained" size="large"
               disabled={loading}

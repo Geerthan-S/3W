@@ -17,6 +17,7 @@ import SearchOffIcon from '@mui/icons-material/SearchOff';
 import { authAPI, postsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/PostCard';
+import PostCardSkeleton from '../components/PostCardSkeleton';
 
 const SearchPage = () => {
   const navigate = useNavigate();
@@ -221,9 +222,28 @@ const SearchPage = () => {
 
         {/* Search Results Display */}
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-            <CircularProgress size={36} />
-          </Box>
+          activeTab === 1 ? (
+            <Stack spacing={1.5}>
+              {[1, 2, 3].map((i) => (
+                <Card key={i} sx={{ borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, p: '16px !important' }}>
+                    <Skeleton variant="circular" width={48} height={48} animation="wave" />
+                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                      <Skeleton variant="text" width="40%" height={20} animation="wave" />
+                      <Skeleton variant="text" width="60%" height={16} animation="wave" />
+                    </Box>
+                    <Skeleton variant="rectangular" width={75} height={30} sx={{ borderRadius: 5 }} animation="wave" />
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          ) : (
+            <Stack spacing={0}>
+              {[1, 2, 3].map((i) => (
+                <PostCardSkeleton key={i} />
+              ))}
+            </Stack>
+          )
         ) : !query.trim() ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 12, textAlign: 'center' }}>
             <SearchIcon sx={{ fontSize: 56, color: '#bdbdbd', mb: 1.5 }} />

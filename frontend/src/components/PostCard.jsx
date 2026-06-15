@@ -25,6 +25,7 @@ import TwitterIcon from '@mui/icons-material/Twitter';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import TelegramIcon from '@mui/icons-material/Telegram';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { postsAPI, authAPI } from '../services/api';
 import CommentSection from './CommentSection';
 
@@ -48,6 +49,7 @@ const stringToColor = (str = '') => {
 
 const PostCard = ({ post, onDelete }) => {
   const { user, updateUser } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const [liked, setLiked] = useState(user ? post.likes?.includes(user.id) : false);
@@ -82,8 +84,11 @@ const PostCard = ({ post, onDelete }) => {
       if (updateUser) {
         updateUser({ following: data.currentUserFollowing });
       }
+      const isNowFollowing = data.currentUserFollowing.includes(authorId);
+      showToast(isNowFollowing ? `Followed @${post.authorUsername}` : `Unfollowed @${post.authorUsername}`, 'success');
     } catch (err) {
       console.error('Follow failed:', err);
+      showToast('Failed to toggle follow', 'error');
     } finally {
       setFollowLoading(false);
     }
@@ -129,6 +134,7 @@ const PostCard = ({ post, onDelete }) => {
     navigator.clipboard.writeText(postUrl);
     setCopied(true);
     recordShare();
+    showToast('Link copied to clipboard!', 'success');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -142,9 +148,10 @@ const PostCard = ({ post, onDelete }) => {
       const { data } = await postsAPI.likePost(post._id);
       setLiked(data.liked);
       setLikesCount(data.likesCount);
-    } catch {
+    } catch (err) {
       setLiked((p) => !p);
       setLikesCount((p) => (liked ? p + 1 : p - 1));
+      showToast('Failed to like post. Please try again.', 'error');
     } finally {
       setLikeLoading(false);
     }
@@ -157,9 +164,10 @@ const PostCard = ({ post, onDelete }) => {
     try {
       const { data } = await postsAPI.votePost(post._id, optionId);
       setPoll(data.poll);
+      showToast('Vote cast successfully!', 'success');
     } catch (err) {
       console.error('Vote failed:', err);
-      alert(err.response?.data?.message || 'Failed to vote');
+      showToast(err.response?.data?.message || 'Failed to cast vote', 'error');
     } finally {
       setVoteLoading(false);
     }
@@ -171,9 +179,10 @@ const PostCard = ({ post, onDelete }) => {
     setDeleteLoading(true);
     try {
       await postsAPI.deletePost(post._id);
+      showToast('Post deleted successfully!', 'success');
       if (onDelete) onDelete(post._id);
-    } catch {
-      alert('Failed to delete post');
+    } catch (err) {
+      showToast('Failed to delete post', 'error');
       setDeleteLoading(false);
     }
   };

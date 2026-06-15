@@ -8,9 +8,11 @@ import {
   Link, Alert, CircularProgress, Divider,
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 const Login = () => {
   const { login } = useAuth();
+  const { showToast } = useToast();
   const navigate  = useNavigate();
   const location  = useLocation();
   const from = location.state?.from?.pathname || '/';
@@ -26,13 +28,20 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.email || !formData.password) return setError('Please fill in all fields.');
+    if (!formData.email || !formData.password) {
+      showToast('Please fill in all fields.', 'warning');
+      setError('Please fill in all fields.');
+      return;
+    }
     setLoading(true);
     try {
       await login(formData.email, formData.password);
+      showToast('Logged in successfully!', 'success');
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      const errMsg = err.response?.data?.message || 'Login failed. Please try again.';
+      setError(errMsg);
+      showToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -67,7 +76,7 @@ const Login = () => {
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
-            {error && <Alert severity="error" sx={{ mt: 1.5, borderRadius: 2 }}>{error}</Alert>}
+
 
             <Button fullWidth type="submit" variant="contained" size="large"
               disabled={loading}
