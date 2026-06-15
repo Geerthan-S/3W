@@ -67,12 +67,13 @@ const PostCard = ({ post, onDelete }) => {
 
   const isPromotion = !!post.promotion;
   const promoThemeColor = isPromotion
-    ? (post.promotion.appName?.toLowerCase().includes('quiz') ||
-       post.promotion.appName?.toLowerCase().includes('pay') ||
-       post.promotion.appName?.toLowerCase().includes('gold') ||
-       post.promotion.appName?.toLowerCase().includes('money')
-        ? '#d4af37' // Gold/Yellow
-        : '#2196F3') // Blue
+    ? (post.promotion.themeColor ||
+       (post.promotion.appName?.toLowerCase().includes('quiz') ||
+        post.promotion.appName?.toLowerCase().includes('pay') ||
+        post.promotion.appName?.toLowerCase().includes('gold') ||
+        post.promotion.appName?.toLowerCase().includes('money')
+          ? '#d4af37' // Gold/Yellow
+          : '#2196F3')) // Blue
     : null;
 
   const [shareOpen, setShareOpen] = useState(false);
@@ -171,8 +172,9 @@ const PostCard = ({ post, onDelete }) => {
       sx={{ 
         mb: 1.5, 
         borderRadius: 3, 
-        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-        border: isPromotion ? `2px solid ${promoThemeColor}` : 'none'
+        boxShadow: isPromotion ? `0 0 12px ${promoThemeColor}` : '0 1px 4px rgba(0,0,0,0.08)',
+        border: isPromotion ? `2px solid ${promoThemeColor}` : 'none',
+        transition: 'box-shadow 0.3s ease-in-out'
       }}
     >
       <CardContent sx={{ pb: 0 }}>

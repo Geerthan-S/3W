@@ -86,6 +86,7 @@ const CreatePost = ({ onPostCreated, feedType: propFeedType, setFeedType: propSe
   const [buttonText, setButtonText] = useState('');
   const [buttonLink, setButtonLink] = useState('');
   const [promoCategory, setPromoCategory] = useState('Refer And Earn');
+  const [promoColor, setPromoColor] = useState('#2196F3');
 
   // Emoji Picker State
   const [emojiAnchor, setEmojiAnchor] = useState(null);
@@ -176,7 +177,8 @@ const CreatePost = ({ onPostCreated, feedType: propFeedType, setFeedType: propSe
             description: promoDesc.trim(),
             buttonText: buttonText.trim(),
             buttonLink: buttonLink.trim(),
-            category: promoCategory
+            category: promoCategory,
+            themeColor: promoColor
           }
         };
       } else {
@@ -191,6 +193,7 @@ const CreatePost = ({ onPostCreated, feedType: propFeedType, setFeedType: propSe
         setText(''); setImageUrl(''); setShowImageInput(false);
         setShowPollInput(false); setPollOptions(['', '']); setPollDuration(24);
         setAppName(''); setPromoTitle(''); setPromoDesc(''); setButtonText(''); setButtonLink('');
+        setPromoColor('#2196F3');
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       } else {
@@ -266,7 +269,7 @@ const CreatePost = ({ onPostCreated, feedType: propFeedType, setFeedType: propSe
             <TextField
               fullWidth
               size="small"
-              placeholder="App/Website Name (e.g. TaskPlanet)"
+              placeholder="App/Website Name"
               value={appName}
               onChange={(e) => setAppName(e.target.value)}
               disabled={loading}
@@ -320,7 +323,7 @@ const CreatePost = ({ onPostCreated, feedType: propFeedType, setFeedType: propSe
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Button Text (e.g. Shop Now)"
+                placeholder="Button Text"
                 value={buttonText}
                 onChange={(e) => setButtonText(e.target.value)}
                 disabled={loading}
@@ -363,7 +366,7 @@ const CreatePost = ({ onPostCreated, feedType: propFeedType, setFeedType: propSe
             <TextField
               fullWidth
               size="small"
-              placeholder="Button Link (https://...)"
+              placeholder="Button Link"
               value={buttonLink}
               onChange={(e) => setButtonLink(e.target.value)}
               disabled={loading}
@@ -377,6 +380,53 @@ const CreatePost = ({ onPostCreated, feedType: propFeedType, setFeedType: propSe
                 }
               }}
             />
+
+            {/* Theme Color Selector */}
+            <Box sx={{ mt: 0.5 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontWeight: 700 }}>
+                Border Glow Theme Color:
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                {[
+                  { value: '#2196F3', label: 'Blue' },
+                  { value: '#d4af37', label: 'Gold' },
+                  { value: '#4CAF50', label: 'Green' },
+                  { value: '#9C27B0', label: 'Purple' },
+                  { value: '#F44336', label: 'Red' }
+                ].map((colorObj) => {
+                  const isActive = promoColor === colorObj.value;
+                  return (
+                    <Tooltip key={colorObj.value} title={colorObj.label}>
+                      <Box
+                        onClick={() => setPromoColor(colorObj.value)}
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          bgcolor: colorObj.value,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '2px solid',
+                          borderColor: isActive ? '#000000' : 'transparent',
+                          boxShadow: isActive ? `0 0 8px ${colorObj.value}` : 'none',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            transform: 'scale(1.15)',
+                            boxShadow: `0 0 6px ${colorObj.value}`
+                          }
+                        }}
+                      >
+                        {isActive && (
+                          <span style={{ color: '#fff', fontSize: '0.7rem', fontWeight: 800 }}>✓</span>
+                        )}
+                      </Box>
+                    </Tooltip>
+                  );
+                })}
+              </Box>
+            </Box>
           </Box>
         ) : (
           /* Create Post / Poll Mode Form */

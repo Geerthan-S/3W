@@ -129,6 +129,11 @@ const postSchema = new mongoose.Schema(
         type: String,
         enum: ['Refer And Earn', 'Crypto'],
         trim: true,
+      },
+      themeColor: {
+        type: String,
+        default: '#2196F3',
+        trim: true,
       }
     }
   },
