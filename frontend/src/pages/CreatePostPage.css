@@ -2,11 +2,11 @@
 
 .create-page {
   min-height: 100vh;
-  padding: var(--space-xl) 0 var(--space-2xl);
+  padding: 24px 0 40px;
 }
 
 .create-page-header {
-  margin-bottom: var(--space-md);
+  margin-bottom: 20px;
 }
 
 .back-link {

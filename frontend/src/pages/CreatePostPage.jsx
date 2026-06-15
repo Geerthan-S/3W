@@ -5,7 +5,7 @@
  */
 
 import { Link } from 'react-router-dom';
-import { Button } from '@mui/material';
+import { Button, Container } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CreatePost from '../components/CreatePost';
 import './CreatePostPage.css';
@@ -13,7 +13,7 @@ import './CreatePostPage.css';
 const CreatePostPage = () => {
   return (
     <div className="create-page">
-      <div className="container">
+      <Container maxWidth="sm">
         <div className="create-page-header">
           <Button
             component={Link}
@@ -42,7 +42,7 @@ const CreatePostPage = () => {
         </div>
         {/* Uses the reusable CreatePost component — navigates to feed on submit */}
         <CreatePost />
-      </div>
+      </Container>
     </div>
   );
 };
