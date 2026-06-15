@@ -19,7 +19,6 @@ import CreatePost from '../components/CreatePost';
 
 const FILTER_TABS = [
   { label: 'All Post',      value: 'newest'   },
-  { label: 'For You',       value: 'foryou'   },
   { label: 'Most Liked',    value: 'likes'    },
   { label: 'Most Commented',value: 'comments' },
   { label: 'Most Shared',   value: 'shares'   },
