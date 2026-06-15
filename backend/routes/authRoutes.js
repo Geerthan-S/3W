@@ -50,6 +50,8 @@ router.post('/register', async (req, res) => {
         email: user.email,
         avatar: user.avatar,
         bio: user.bio,
+        followers: user.followers || [],
+        following: user.following || [],
       },
     });
   } catch (err) {
@@ -95,6 +97,8 @@ router.post('/login', async (req, res) => {
         email: user.email,
         avatar: user.avatar,
         bio: user.bio,
+        followers: user.followers || [],
+        following: user.following || [],
       },
     });
   } catch (err) {
@@ -113,6 +117,8 @@ router.get('/me', protect, async (req, res) => {
     avatar: req.user.avatar,
     bio: req.user.bio,
     createdAt: req.user.createdAt,
+    followers: req.user.followers || [],
+    following: req.user.following || [],
   });
 });
 
@@ -136,6 +142,8 @@ router.put('/profile', protect, async (req, res) => {
       avatar: user.avatar,
       bio: user.bio,
       createdAt: user.createdAt,
+      followers: user.followers || [],
+      following: user.following || [],
     });
   } catch (err) {
     console.error('Profile update error:', err);
@@ -147,12 +155,68 @@ router.put('/profile', protect, async (req, res) => {
 // Returns public profile details of a user by username.
 router.get('/profile/:username', async (req, res) => {
   try {
-    const user = await User.findOne({ username: req.params.username }).select('username bio avatar createdAt');
+    const user = await User.findOne({ username: req.params.username }).select('username bio avatar createdAt followers following');
     if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    res.json({
+      _id: user._id,
+      username: user.username,
+      bio: user.bio,
+      avatar: user.avatar,
+      createdAt: user.createdAt,
+      followersCount: user.followers?.length || 0,
+      followingCount: user.following?.length || 0,
+      followers: user.followers || [],
+      following: user.following || [],
+    });
   } catch (err) {
     console.error('Get profile error:', err);
     res.status(500).json({ message: 'Server error retrieving profile' });
+  }
+});
+
+// ─── POST /api/auth/profile/:username/follow ──────────────────────────────────
+// Follows/unfollows a user by username
+router.post('/profile/:username/follow', protect, async (req, res) => {
+  try {
+    const targetUsername = req.params.username;
+    const currentUser = req.user;
+
+    if (currentUser.username === targetUsername) {
+      return res.status(400).json({ message: 'You cannot follow yourself' });
+    }
+
+    const targetUser = await User.findOne({ username: targetUsername });
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!targetUser.followers) targetUser.followers = [];
+    if (!currentUser.following) currentUser.following = [];
+
+    const isFollowing = currentUser.following.some(id => id.toString() === targetUser._id.toString());
+
+    if (isFollowing) {
+      // Unfollow
+      currentUser.following = currentUser.following.filter(id => id.toString() !== targetUser._id.toString());
+      targetUser.followers = targetUser.followers.filter(id => id.toString() !== currentUser._id.toString());
+    } else {
+      // Follow
+      currentUser.following.push(targetUser._id);
+      targetUser.followers.push(currentUser._id);
+    }
+
+    await currentUser.save();
+    await targetUser.save();
+
+    res.json({
+      followed: !isFollowing,
+      followersCount: targetUser.followers.length,
+      followingCount: targetUser.following.length,
+      currentUserFollowing: currentUser.following,
+    });
+  } catch (err) {
+    console.error('Follow error:', err);
+    res.status(500).json({ message: 'Server error during follow operation' });
   }
 });
 

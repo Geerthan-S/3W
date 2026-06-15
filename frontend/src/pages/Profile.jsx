@@ -2,7 +2,7 @@
  * pages/Profile.jsx — MUI profile with stats + post list
  */
 import { useState, useEffect } from 'react';
-import { useParams, Link as RouterLink } from 'react-router-dom';
+import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box, Container, Avatar, Typography, Card, CardContent,
   Grid, Divider, Stack, Skeleton, Alert, Button, Dialog, DialogTitle,
@@ -22,6 +22,7 @@ const stringToColor = (str = '') => {
 const Profile = () => {
   const { username } = useParams();
   const { user: currentUser, updateUser } = useAuth();
+  const navigate = useNavigate();
 
   const [posts, setPosts]     = useState([]);
   const [profileUser, setProfileUser] = useState(null);
@@ -34,6 +35,7 @@ const Profile = () => {
   const [bioText, setBioText] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -85,6 +87,40 @@ const Profile = () => {
   const totalComments = posts.reduce((s, p) => s + (p.comments?.length || 0), 0);
   const isOwn         = currentUser?.username === username;
 
+  const isFollowing = currentUser?.following?.includes(profileUser?._id);
+
+  const handleFollowToggle = async () => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+    setFollowLoading(true);
+    try {
+      const { data } = await authAPI.followUser(username);
+      
+      // Update local profileUser followers count
+      setProfileUser((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          followersCount: data.followersCount,
+          followers: data.followed
+            ? [...(prev.followers || []), currentUser.id || currentUser._id]
+            : (prev.followers || []).filter((id) => id !== (currentUser.id || currentUser._id)),
+        };
+      });
+
+      // Update current user following list in context
+      if (updateUser) {
+        updateUser({ following: data.currentUserFollowing });
+      }
+    } catch (err) {
+      console.error('Follow toggle failed:', err);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
   const statCard = (label, value) => (
     <Box sx={{ textAlign: 'center' }}>
       <Typography variant="h6" fontWeight={800}>{value}</Typography>
@@ -134,16 +170,29 @@ const Profile = () => {
                     Edit Profile
                   </Button>
                 )}
+                {!isOwn && (
+                  <Button 
+                    size="small" 
+                    variant={isFollowing ? "outlined" : "contained"} 
+                    onClick={handleFollowToggle}
+                    disabled={followLoading}
+                    sx={{ mt: 1.5, borderRadius: 5, textTransform: 'none', fontWeight: 700 }}
+                  >
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </Button>
+                )}
               </Box>
             </Box>
 
             <Divider sx={{ mb: 2 }} />
 
             {/* Stats row */}
-            <Grid container spacing={2} columns={3}>
+            <Grid container spacing={2} columns={5}>
               <Grid item xs={1}>{statCard('Posts', posts.length)}</Grid>
               <Grid item xs={1}>{statCard('Likes', totalLikes)}</Grid>
               <Grid item xs={1}>{statCard('Comments', totalComments)}</Grid>
+              <Grid item xs={1}>{statCard('Followers', profileUser?.followersCount || 0)}</Grid>
+              <Grid item xs={1}>{statCard('Following', profileUser?.followingCount || 0)}</Grid>
             </Grid>
           </CardContent>
         </Card>

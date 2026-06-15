@@ -48,6 +48,24 @@ const userSchema = new mongoose.Schema(
       default: '',
       maxlength: [150, 'Bio must be at most 150 characters'],
     },
+
+    // Followers list
+    followers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: [],
+      },
+    ],
+
+    // Following list
+    following: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: [],
+      },
+    ],
   },
   {
     timestamps: true, // Adds createdAt and updatedAt automatically

@@ -57,6 +57,9 @@ export const authAPI = {
 
   /** Get public user profile info by username */
   getProfile: (username) => api.get(`/api/auth/profile/${username}`),
+
+  /** Follow or unfollow a user by their username */
+  followUser: (username) => api.post(`/api/auth/profile/${username}/follow`),
 };
 
 // ─── Posts API ─────────────────────────────────────────────────────────────────

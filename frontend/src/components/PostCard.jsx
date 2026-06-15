@@ -25,7 +25,7 @@ import TwitterIcon from '@mui/icons-material/Twitter';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import TelegramIcon from '@mui/icons-material/Telegram';
 import { useAuth } from '../context/AuthContext';
-import { postsAPI } from '../services/api';
+import { postsAPI, authAPI } from '../services/api';
 import CommentSection from './CommentSection';
 
 // ─── Relative time ─────────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ const stringToColor = (str = '') => {
 };
 
 const PostCard = ({ post, onDelete }) => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
 
   const [liked, setLiked] = useState(user ? post.likes?.includes(user.id) : false);
@@ -56,6 +56,28 @@ const PostCard = ({ post, onDelete }) => {
   const [commentsCount, setCommentsCount] = useState(post.comments?.length || 0);
   const [showComments, setShowComments] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+
+  const authorId = post.author?._id || post.author;
+  const isFollowing = user?.following?.includes(authorId);
+
+  const handleFollowToggle = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setFollowLoading(true);
+    try {
+      const { data } = await authAPI.followUser(post.authorUsername);
+      if (updateUser) {
+        updateUser({ following: data.currentUserFollowing });
+      }
+    } catch (err) {
+      console.error('Follow failed:', err);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   // Poll state
   const [poll, setPoll] = useState(post.poll);
@@ -209,9 +231,22 @@ const PostCard = ({ post, onDelete }) => {
           {/* Follow / Delete */}
           <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
             {!isOwner && (
-              <Button variant="contained" size="small"
-                sx={{ borderRadius: 5, px: 2, py: 0.3, fontSize: '0.78rem', minWidth: 0 }}>
-                Follow
+              <Button 
+                variant={isFollowing ? "outlined" : "contained"} 
+                size="small"
+                onClick={handleFollowToggle}
+                disabled={followLoading}
+                sx={{ 
+                  borderRadius: 5, 
+                  px: 2, 
+                  py: 0.3, 
+                  fontSize: '0.78rem', 
+                  minWidth: 0,
+                  textTransform: 'none',
+                  fontWeight: 700
+                }}
+              >
+                {isFollowing ? 'Following' : 'Follow'}
               </Button>
             )}
             {isOwner && (
