@@ -72,15 +72,20 @@ const Navbar = () => {
           Social
         </Typography>
 
-        {/* Search bar */}
-        <Search onClick={() => navigate('/search')} sx={{ cursor: 'pointer' }}>
-          <SearchIconWrapper><SearchIcon fontSize="small" /></SearchIconWrapper>
-          <StyledInputBase 
-            placeholder="Search users, posts…" 
-            inputProps={{ 'aria-label': 'search', readOnly: true }} 
-            sx={{ cursor: 'pointer', '& input': { cursor: 'pointer' } }}
-          />
-        </Search>
+        {/* Search icon button */}
+        <Tooltip title="Search">
+          <IconButton
+            onClick={() => navigate('/search')}
+            color="primary"
+            sx={{
+              bgcolor: 'rgba(33, 150, 243, 0.04)',
+              '&:hover': { bgcolor: 'rgba(33, 150, 243, 0.12)' },
+              ml: 2,
+            }}
+          >
+            <SearchIcon />
+          </IconButton>
+        </Tooltip>
 
         <Box sx={{ flexGrow: 1 }} />
 
