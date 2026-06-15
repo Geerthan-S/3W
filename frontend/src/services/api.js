@@ -97,6 +97,9 @@ export const postsAPI = {
 
   /** Cast a vote on a poll option */
   votePost: (postId, optionId) => api.post(`/api/posts/${postId}/vote`, { optionId }),
+
+  /** Increment share count on a post */
+  sharePost: (postId) => api.post(`/api/posts/${postId}/share`),
 };
 
 export default api;

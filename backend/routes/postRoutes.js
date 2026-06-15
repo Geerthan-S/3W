@@ -290,6 +290,25 @@ router.post('/:id/vote', protect, async (req, res) => {
   }
 });
 
+// ─── POST /api/posts/:id/share ────────────────────────────────────────────────
+// Increments the share count of a post.
+router.post('/:id/share', async (req, res) => {
+  try {
+    const post = await Post.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { sharesCount: 1 } },
+      { new: true }
+    );
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+    res.json({ sharesCount: post.sharesCount });
+  } catch (err) {
+    console.error('Share increment error:', err);
+    res.status(500).json({ message: 'Failed to increment share count' });
+  }
+});
+
 // ─── GET /api/posts/user/:username ────────────────────────────────────────────
 // Returns all posts by a specific user (for profile page).
 router.get('/user/:username', async (req, res) => {

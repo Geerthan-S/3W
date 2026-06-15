@@ -81,6 +81,12 @@ const postSchema = new mongoose.Schema(
     // Embedded comments (no separate collection needed per assignment rules)
     comments: [commentSchema],
 
+    // Share count tracker
+    sharesCount: {
+      type: Number,
+      default: 0,
+    },
+
     // Embedded poll (optional)
     poll: {
       options: [

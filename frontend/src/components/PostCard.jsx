@@ -57,6 +57,16 @@ const PostCard = ({ post, onDelete }) => {
   const [showComments, setShowComments] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [sharesCount, setSharesCount] = useState(post.sharesCount || 0);
+
+  const recordShare = async () => {
+    try {
+      const { data } = await postsAPI.sharePost(post._id);
+      setSharesCount(data.sharesCount);
+    } catch (err) {
+      console.error('Failed to increment share count:', err);
+    }
+  };
 
   const authorId = post.author?._id || post.author;
   const isFollowing = user?.following?.includes(authorId);
@@ -118,6 +128,7 @@ const PostCard = ({ post, onDelete }) => {
   const handleCopyLink = () => {
     navigator.clipboard.writeText(postUrl);
     setCopied(true);
+    recordShare();
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -492,7 +503,7 @@ const PostCard = ({ post, onDelete }) => {
           <IconButton size="small" onClick={handleShareClick} sx={{ color: 'text.secondary' }}>
             <ShareOutlinedIcon fontSize="small" />
           </IconButton>
-          <Typography variant="caption" color="text.secondary">0</Typography>
+          <Typography variant="caption" color="text.secondary">{sharesCount}</Typography>
         </Box>
       </CardActions>
 
@@ -625,6 +636,7 @@ const PostCard = ({ post, onDelete }) => {
                 href={`https://api.whatsapp.com/send?text=${encodedText}%20${encodedUrl}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={recordShare}
                 sx={{ 
                   bgcolor: '#E8F5E9', 
                   color: '#25D366',
@@ -646,6 +658,7 @@ const PostCard = ({ post, onDelete }) => {
                 href={`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={recordShare}
                 sx={{ 
                   bgcolor: '#E1F5FE', 
                   color: '#0088cc',
@@ -667,6 +680,7 @@ const PostCard = ({ post, onDelete }) => {
                 href={`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={recordShare}
                 sx={{ 
                   bgcolor: '#E0E0E0', 
                   color: '#000000',
@@ -688,6 +702,7 @@ const PostCard = ({ post, onDelete }) => {
                 href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={recordShare}
                 sx={{ 
                   bgcolor: '#E8EAF6', 
                   color: '#1877F2',
