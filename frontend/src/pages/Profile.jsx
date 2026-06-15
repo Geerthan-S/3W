@@ -5,9 +5,10 @@ import { useState, useEffect } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import {
   Box, Container, Avatar, Typography, Card, CardContent,
-  Grid, Divider, Stack, Skeleton, Alert, Button,
+  Grid, Divider, Stack, Skeleton, Alert, Button, Dialog, DialogTitle,
+  DialogContent, TextField, DialogActions,
 } from '@mui/material';
-import { postsAPI } from '../services/api';
+import { postsAPI, authAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/PostCard';
 
@@ -20,27 +21,63 @@ const stringToColor = (str = '') => {
 
 const Profile = () => {
   const { username } = useParams();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, updateUser } = useAuth();
 
   const [posts, setPosts]     = useState([]);
+  const [profileUser, setProfileUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
 
+  // Edit profile state
+  const [editOpen, setEditOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [bioText, setBioText] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchProfileData = async () => {
       setLoading(true); setError('');
       try {
-        const { data } = await postsAPI.getUserPosts(username);
-        setPosts(data?.posts || []);
+        const [postsRes, userRes] = await Promise.all([
+          postsAPI.getUserPosts(username),
+          authAPI.getProfile(username)
+        ]);
+        setPosts(postsRes.data?.posts || []);
+        setProfileUser(userRes.data);
       } catch (err) {
-        console.error('Profile posts loading error:', err);
+        console.error('Profile loading error:', err);
         setError('Failed to load this profile.');
       } finally {
         setLoading(false);
       }
     };
-    fetchPosts();
+    fetchProfileData();
   }, [username]);
+
+  useEffect(() => {
+    if (profileUser) {
+      setAvatarUrl(profileUser.avatar || '');
+      setBioText(profileUser.bio || '');
+    }
+  }, [profileUser]);
+
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    setSaveError('');
+    try {
+      const { data } = await authAPI.updateProfile({ avatar: avatarUrl, bio: bioText });
+      setProfileUser(data);
+      if (updateUser) {
+        updateUser({ avatar: data.avatar, bio: data.bio });
+      }
+      setEditOpen(false);
+    } catch (err) {
+      setSaveError(err.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handlePostDeleted = (id) => setPosts((p) => p.filter((post) => post._id !== id));
 
@@ -61,22 +98,42 @@ const Profile = () => {
         {/* ── Profile header card ── */}
         <Card sx={{ mb: 2, borderRadius: 3 }}>
           <CardContent sx={{ pt: 3, pb: '16px !important' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-              <Avatar sx={{ width: 72, height: 72, bgcolor: stringToColor(username),
-                            fontWeight: 700, fontSize: '1.5rem' }}>
-                {username?.slice(0, 2).toUpperCase()}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, mb: 2 }}>
+              <Avatar 
+                src={profileUser?.avatar || ''} 
+                sx={{ width: 72, height: 72, bgcolor: stringToColor(username),
+                      fontWeight: 700, fontSize: '1.5rem' }}
+              >
+                {profileUser?.avatar ? null : username?.slice(0, 2).toUpperCase()}
               </Avatar>
-              <Box>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="h6" fontWeight={800}>{username}</Typography>
+                  <Typography variant="h6" fontWeight={800} noWrap>{username}</Typography>
                   {isOwn && (
                     <Typography variant="caption" sx={{ px: 1, py: 0.2, bgcolor: 'primary.main',
-                      color: '#fff', borderRadius: 5, fontWeight: 700, fontSize: '0.65rem' }}>
+                      color: '#fff', borderRadius: 5, fontWeight: 700, fontSize: '0.65rem', flexShrink: 0 }}>
                       You
                     </Typography>
                   )}
                 </Box>
                 <Typography variant="body2" color="text.secondary">@{username}</Typography>
+
+                {profileUser?.bio && (
+                  <Typography variant="body2" color="text.primary" sx={{ mt: 0.8, fontStyle: 'italic', wordBreak: 'break-word' }}>
+                    {profileUser.bio}
+                  </Typography>
+                )}
+
+                {isOwn && (
+                  <Button 
+                    size="small" 
+                    variant="outlined" 
+                    onClick={() => setEditOpen(true)}
+                    sx={{ mt: 1.5, borderRadius: 5, textTransform: 'none', fontWeight: 700 }}
+                  >
+                    Edit Profile
+                  </Button>
+                )}
               </Box>
             </Box>
 
@@ -142,6 +199,41 @@ const Profile = () => {
           )
         )}
       </Container>
+
+      {/* ── Edit Profile Dialog ── */}
+      <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800 }}>Edit Profile</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1.5 }}>
+          {saveError && <Alert severity="error">{saveError}</Alert>}
+          <TextField
+            fullWidth
+            label="Profile Icon URL"
+            placeholder="Paste image URL here..."
+            value={avatarUrl}
+            onChange={(e) => setAvatarUrl(e.target.value)}
+            disabled={saving}
+          />
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="Bio"
+            placeholder="Tell us about yourself..."
+            value={bioText}
+            onChange={(e) => setBioText(e.target.value)}
+            disabled={saving}
+            inputProps={{ maxLength: 150 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setEditOpen(false)} disabled={saving} color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={handleSaveProfile} variant="contained" disabled={saving} color="primary">
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

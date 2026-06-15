@@ -51,6 +51,12 @@ export const authAPI = {
 
   /** Get the currently logged-in user */
   getMe: () => api.get('/api/auth/me'),
+
+  /** Update authenticated user profile details */
+  updateProfile: (data) => api.put('/api/auth/profile', data),
+
+  /** Get public user profile info by username */
+  getProfile: (username) => api.get(`/api/auth/profile/${username}`),
 };
 
 // ─── Posts API ─────────────────────────────────────────────────────────────────

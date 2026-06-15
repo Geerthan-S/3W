@@ -106,8 +106,11 @@ const Navbar = () => {
             {/* Avatar menu */}
             <Tooltip title={user.username}>
               <IconButton onClick={handleMenu} sx={{ p: 0 }}>
-                <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: '0.85rem', fontWeight: 700 }}>
-                  {initials}
+                <Avatar 
+                  src={user.avatar || ''} 
+                  sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: '0.85rem', fontWeight: 700 }}
+                >
+                  {user.avatar ? null : initials}
                 </Avatar>
               </IconButton>
             </Tooltip>

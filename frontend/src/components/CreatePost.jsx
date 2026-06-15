@@ -384,9 +384,12 @@ const CreatePost = ({ onPostCreated, feedType: propFeedType, setFeedType: propSe
             {/* Row: avatar (only in non-poll mode) + textarea */}
             <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
               {!showPollInput && (
-                <Avatar sx={{ width: 42, height: 42, bgcolor: stringToColor(user?.username),
-                              fontWeight: 700, fontSize: '0.85rem', mt: 0.5 }}>
-                  {initials}
+                <Avatar 
+                  src={user?.avatar || ''} 
+                  sx={{ width: 42, height: 42, bgcolor: stringToColor(user?.username),
+                        fontWeight: 700, fontSize: '0.85rem', mt: 0.5 }}
+                >
+                  {user?.avatar ? null : initials}
                 </Avatar>
               )}
               <TextField

@@ -183,6 +183,7 @@ const PostCard = ({ post, onDelete }) => {
             sx={{ width: 44, height: 44, bgcolor: avatarColor, fontWeight: 700,
                   fontSize: '0.9rem', cursor: 'pointer' }}
             onClick={() => navigate(`/profile/${post.authorUsername}`)}
+            src={post.author?.avatar || ''}
           >
             {post.author?.avatar ? null : initials}
           </Avatar>
